@@ -76,6 +76,9 @@ for i, sg in enumerate(segs, 1):
 # ---------- overlays ----------
 ov, tw, sfx = [], [], []
 
+# scrim behind hook + title card (white type over a white van needs a bed)
+ov.append('      <div id="hookscrim" class="clip" data-start="0" data-duration="7.04" data-track-index="1"></div>')
+
 # hook lines
 for i, line in enumerate(HOOK):
     st = 0.15 + i * 1.30
@@ -182,11 +185,14 @@ doc = f'''<!doctype html>
         font-family:"InterLocal", sans-serif; -webkit-font-smoothing:antialiased; }}
       :root {{ --ink:#0B0D0E; --paper:#F5F3EF; --accent:#E8502E; --good:#1FA971; --bad:#E0453A; }}
 
-      #scrim {{ position:absolute; left:0; right:0; bottom:0; height:780px; z-index:2; pointer-events:none;
-        background:linear-gradient(to top, rgba(8,9,10,.90) 0%, rgba(8,9,10,.72) 26%, rgba(8,9,10,.34) 58%, rgba(8,9,10,0) 100%); }}
+      #scrim {{ position:absolute; left:0; right:0; bottom:0; height:820px; z-index:2; pointer-events:none;
+        background:linear-gradient(to top, rgba(8,9,10,.93) 0%, rgba(8,9,10,.84) 30%, rgba(8,9,10,.58) 55%, rgba(8,9,10,.26) 78%, rgba(8,9,10,0) 100%); }}
       #topscrim {{ position:absolute; left:0; right:0; top:0; height:330px; z-index:2; pointer-events:none;
         background:linear-gradient(to bottom, rgba(8,9,10,.62) 0%, rgba(8,9,10,0) 100%); }}
 
+      #hookscrim {{ position:absolute; inset:0; z-index:3; pointer-events:none;
+        background:linear-gradient(to bottom, rgba(8,9,10,0) 10%, rgba(8,9,10,.66) 24%,
+          rgba(8,9,10,.66) 64%, rgba(8,9,10,0) 80%); }}
       .hook-line {{ position:absolute; left:72px; right:72px; z-index:8; font-weight:800; font-size:104px;
         line-height:1.02; letter-spacing:-.035em; color:var(--paper); text-shadow:0 8px 40px rgba(0,0,0,.65); }}
       .h0 {{ top:470px; }}
@@ -241,8 +247,8 @@ doc = f'''<!doctype html>
       .cap-group {{ position:absolute; left:0; right:0; display:flex; align-items:center; justify-content:center; opacity:0; }}
       .cap-box {{ max-width:940px; text-align:center; }}
       .cap-line {{ display:flex; justify-content:center; flex-wrap:nowrap; gap:16px; line-height:1.14; }}
-      .cap-w {{ display:inline-block; font-weight:800; letter-spacing:-.02em; color:#9BA0A4;
-        text-shadow:0 5px 26px rgba(0,0,0,.75); }}
+      .cap-w {{ display:inline-block; font-weight:800; letter-spacing:-.02em; color:#C2C7CA;
+        text-shadow:0 2px 6px rgba(0,0,0,.92), 0 6px 30px rgba(0,0,0,.80); }}
     </style>
   </head>
   <body>
@@ -258,7 +264,7 @@ doc = f'''<!doctype html>
     <script>
       var WORDS = {CAPWORDS};
       var MAXW = 4, BASE = 60, MIN = 42, GAP = 16, BOX = 880;
-      var ON = "#FFFFFF", OFF = "#9BA0A4", PAUSE = 0.26, TAIL = 0.28;
+      var ON = "#FFFFFF", OFF = "#C2C7CA", PAUSE = 0.26, TAIL = 0.28;
 
       var cv = document.createElement("canvas"), cx = cv.getContext("2d");
       function wWidth(t, fs) {{ cx.font = "800 " + fs + "px InterLocal"; return cx.measureText(t).width * 1.06; }}
