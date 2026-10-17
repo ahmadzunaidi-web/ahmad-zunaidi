@@ -219,7 +219,7 @@ doc = f'''<!doctype html>
       .mk-g {{ font-weight:800; font-size:62px; line-height:1; color:#fff; }}
       .mk-l {{ font-weight:800; font-size:44px; letter-spacing:.01em; color:#fff; }}
 
-      #ledglow {{ position:absolute; left:250px; top:1080px; width:560px; height:300px; z-index:6; border-radius:50%;
+      #ledglow {{ position:absolute; left:230px; top:1090px; width:400px; height:280px; z-index:6; border-radius:50%;
         background:radial-gradient(ellipse at center, rgba(90,170,255,.60) 0%, rgba(90,170,255,.26) 42%, rgba(90,170,255,0) 72%);
         filter:blur(6px); }}
 
