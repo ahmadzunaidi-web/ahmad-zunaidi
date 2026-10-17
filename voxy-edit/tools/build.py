@@ -171,7 +171,7 @@ doc = f'''<!doctype html>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width={W}, height={H}" />
-    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script src="assets/vendor/gsap.min.js"></script>
     <style>
       @font-face {{ font-family:"InterLocal"; src:url("assets/fonts/Inter-Regular.otf") format("opentype"); font-weight:400; font-display:block; }}
       @font-face {{ font-family:"InterLocal"; src:url("assets/fonts/Inter-SemiBold.otf") format("opentype"); font-weight:600; font-display:block; }}
@@ -204,7 +204,7 @@ doc = f'''<!doctype html>
       .chip-inner {{ display:inline-flex; align-items:baseline; gap:4px; background:var(--accent); border-radius:999px;
         padding:20px 42px 24px; box-shadow:0 14px 44px rgba(0,0,0,.45); }}
       .chip-n {{ font-weight:800; font-size:86px; line-height:1; color:#fff; letter-spacing:-.04em; }}
-      .chip-d {{ font-weight:700; font-size:44px; line-height:1; color:rgba(255,255,255,.72); }}
+      .chip-d {{ font-weight:700; font-size:44px; line-height:1; color:#FFFFFF; }}
 
       .lt {{ position:absolute; left:60px; right:60px; top:1120px; z-index:7; }}
       .lt-txt {{ display:inline-block; background:rgba(245,243,239,.96); color:var(--ink); font-weight:800;
