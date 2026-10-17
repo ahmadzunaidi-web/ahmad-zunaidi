@@ -1,0 +1,9 @@
+# Source + proxy media — large binaries, regenerate from the Drive original
+assets/media/*.mp4
+assets/media/*.mov
+assets/media/*.webm
+
+# Render output and tool artifacts
+out/
+.hyperframes/
+node_modules/
