@@ -5,6 +5,7 @@ assets/media/*.webm
 
 # Render output and tool artifacts
 out/
+renders/
 .hyperframes/
 node_modules/
 

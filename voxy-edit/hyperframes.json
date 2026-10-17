@@ -20,5 +20,6 @@
       "type": "hyperframes:component",
       "target": "compositions/components/caption-pill-karaoke.html"
     }
-  ]
+  ],
+  "authoringSkill": "general-video"
 }
