@@ -7,3 +7,6 @@ assets/media/*.webm
 out/
 .hyperframes/
 node_modules/
+
+# snapshot PNGs sent to chat (8.5MB, regenerate with check --snapshots)
+preview/
