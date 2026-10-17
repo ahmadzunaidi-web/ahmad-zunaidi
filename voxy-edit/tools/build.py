@@ -9,7 +9,7 @@ from edl import EDL
 
 OUT = os.path.join(_ROOT, "index.html")
 W, H = 1080, 1920
-SRC = "assets/media/voxy-portrait.mp4"
+SRC = "assets/media/voxy-seekable.mp4"
 
 # ---------- timeline map ----------
 segs, t = [], 0.0

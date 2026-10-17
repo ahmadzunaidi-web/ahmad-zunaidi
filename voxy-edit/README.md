@@ -82,4 +82,4 @@ npm run render   # MP4 (belum dijalankan)
 ```
 
 Video sumber tidak disimpan dalam git (320MB). Letakkan semula di
-`assets/media/voxy-portrait.mp4`.
+`assets/media/voxy-seekable.mp4`.
