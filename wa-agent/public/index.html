@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WA Agent</title>
+<style>
+:root{--bg:#f6f7f9;--panel:#fff;--ink:#16181d;--muted:#667085;--line:#e4e7ec;--brand:#12805c;--brand-ink:#fff;--ai:#6d3fd1;--ai-bg:#efe9fb;--human:#1d6fd6;--human-bg:#e3effd;--in:#fff;--echo:#eceff3;--warn:#a15c00;--warn-bg:#fff4d6;--bad:#b42318;--bad-bg:#fde8e6;--ok-bg:#e1f5ec}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0e1116;--panel:#171b22;--ink:#e8eaee;--muted:#98a2b3;--line:#2a303b;--brand:#2fb386;--brand-ink:#06251b;--ai:#b79bff;--ai-bg:#2a2144;--human:#7db4ff;--human-bg:#162a45;--in:#1f2530;--echo:#232a35;--warn:#ffc86b;--warn-bg:#3a2d10;--bad:#ff8a80;--bad-bg:#40191a;--ok-bg:#12372b}}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:6px 12px}
+button:hover{border-color:var(--brand)}button.primary{background:var(--brand);color:var(--brand-ink);border-color:var(--brand);font-weight:600}
+button.danger{color:var(--bad)}button:disabled{opacity:.5;cursor:not-allowed}
+input,select,textarea{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 9px;width:100%}
+textarea{resize:vertical}label{display:block;font-weight:600;margin:10px 0 4px}small,.muted{color:var(--muted)}
+header{display:flex;align-items:center;gap:14px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+header h1{font-size:16px;margin:0}nav{display:flex;gap:4px}
+nav button{border:none;background:none;padding:7px 12px;border-radius:8px;color:var(--muted)}
+nav button.on{background:var(--ok-bg);color:var(--brand);font-weight:600}
+.chips{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:12px;padding:2px 8px;border-radius:99px;background:var(--echo);color:var(--muted)}
+.chip.warn{background:var(--warn-bg);color:var(--warn)}.chip.ok{background:var(--ok-bg);color:var(--brand)}
+main{height:calc(100% - 53px)}
+.view{display:none;height:100%}.view.on{display:grid}
+#v-inbox{grid-template-columns:320px 1fr 260px}
+#v-agents{grid-template-columns:260px 1fr 380px}
+#v-knowledge{grid-template-columns:1fr 1fr}
+.col{border-right:1px solid var(--line);background:var(--panel);overflow:auto;min-height:0}
+.col:last-child{border-right:none}
+.pad{padding:14px}
+.item{padding:10px 14px;border-bottom:1px solid var(--line);cursor:pointer}
+.item:hover,.item.sel{background:var(--ok-bg)}
+.row{display:flex;gap:8px;align-items:center}.row.sp{justify-content:space-between}
+.badge{font-size:11px;padding:1px 7px;border-radius:99px;font-weight:600;white-space:nowrap}
+.b-ai{background:var(--ai-bg);color:var(--ai)}.b-human{background:var(--human-bg);color:var(--human)}.b-none{background:var(--echo);color:var(--muted)}
+.b-closed{background:var(--echo);color:var(--muted)}.b-live{background:var(--ok-bg);color:var(--brand)}.b-err{background:var(--bad-bg);color:var(--bad)}
+.thread{display:flex;flex-direction:column;height:100%;background:var(--bg)}
+.msgs{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:6px}
+.bubble{max-width:72%;padding:8px 11px;border-radius:12px;white-space:pre-wrap;word-break:break-word;border:1px solid var(--line)}
+.bubble.in{align-self:flex-start;background:var(--in)}
+.bubble.out{align-self:flex-end}
+.bubble.ai{background:var(--ai-bg);border-color:transparent}.bubble.human{background:var(--human-bg);border-color:transparent}.bubble.echo{background:var(--echo);border-color:transparent}
+.meta{font-size:11px;color:var(--muted);margin-top:3px}
+.note{align-self:center;background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:6px 10px;font-size:12px;max-width:80%;white-space:pre-wrap}
+.evt{align-self:center;font-size:11px;color:var(--muted)}
+.composer{border-top:1px solid var(--line);background:var(--panel);padding:10px}
+.composer textarea{height:58px}
+.banner{background:var(--ai-bg);color:var(--ai);padding:8px 12px;border-radius:8px;margin-bottom:8px;font-size:13px}
+.empty{display:grid;place-items:center;height:100%;color:var(--muted);text-align:center;padding:30px}
+.tabs-in{display:flex;gap:6px;padding:8px 14px;border-bottom:1px solid var(--line)}
+.kv{display:grid;grid-template-columns:90px 1fr;gap:4px 8px;font-size:13px}.kv b{color:var(--muted);font-weight:500}
+.skill{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:6px 0}
+.skill.on{border-color:var(--brand)}
+.sim{padding:10px 14px;border-bottom:1px solid var(--line);background:var(--bg)}
+.sim input{margin-bottom:6px}
+.toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:10px;opacity:0;transition:.25s;pointer-events:none;z-index:9}
+.toast.show{opacity:1}
+.ms{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:12px;margin:8px 0;background:var(--panel)}
+.ms .dot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;flex:none;background:var(--echo);color:var(--muted)}
+.ms.done .dot{background:var(--brand);color:var(--brand-ink)}.ms.next{border-color:var(--brand);box-shadow:0 0 0 3px var(--ok-bg)}
+.bar{height:10px;background:var(--echo);border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:var(--brand)}
+code{background:var(--echo);padding:1px 5px;border-radius:5px}
+.hit{border-left:3px solid var(--brand);padding:4px 10px;margin:6px 0;background:var(--bg);border-radius:0 8px 8px 0;white-space:pre-wrap}
+.tool{font-size:12px;border-radius:8px;padding:4px 8px;margin:3px 0;background:var(--echo)}.tool.err{background:var(--bad-bg);color:var(--bad)}
+@media(max-width:1000px){#v-inbox,#v-agents,#v-knowledge{grid-template-columns:1fr}.view.on{display:block;overflow:auto}.col{border-right:none;border-bottom:1px solid var(--line)}}
+</style>
+</head>
+<body>
+<header>
+  <h1>💬 WA Agent</h1>
+  <nav id="nav">
+    <button data-v="inbox" class="on">Inbox</button>
+    <button data-v="agents">Ejen AI</button>
+    <button data-v="knowledge">Knowledge</button>
+    <button data-v="progress">Kemajuan</button>
+  </nav>
+  <div class="chips" id="chips"></div>
+</header>
+<main>
+  <section class="view on" id="v-inbox">
+    <div class="col">
+      <div class="sim" id="sim" hidden>
+        <b>Simulator pelanggan</b> <small>(tanpa nombor WhatsApp)</small>
+        <div class="row" style="margin-top:6px"><input id="sim-from" placeholder="No. telefon cth 60123456789" value="60123456789"><input id="sim-name" placeholder="Nama" value="Aina"></div>
+        <div class="row"><input id="sim-text" placeholder="Mesej pelanggan…"><button class="primary" id="sim-send">Hantar</button></div>
+      </div>
+      <div class="tabs-in"><button id="f-open" class="primary">Terbuka</button><button id="f-closed">Ditutup</button><button id="f-all">Semua</button></div>
+      <div id="conv-list"></div>
+    </div>
+    <div class="col" style="background:var(--bg)" id="thread-col"><div class="empty">Pilih satu perbualan di kiri.<br><small>Mesej pelanggan muncul di sini secara langsung.</small></div></div>
+    <div class="col pad" id="side"></div>
+  </section>
+
+  <section class="view" id="v-agents">
+    <div class="col"><div class="pad"><button class="primary" id="agent-new" style="width:100%">+ Ejen baharu</button></div><div id="agent-list"></div></div>
+    <div class="col pad" id="agent-edit"><div class="empty">Pilih atau cipta ejen.<br><small>Mulakan dengan templat Receptionist atau Sales.</small></div></div>
+    <div class="col pad" id="agent-test"></div>
+  </section>
+
+  <section class="view" id="v-knowledge">
+    <div class="col pad">
+      <h3 style="margin-top:0">Tambah sumber</h3>
+      <label>Nama</label><input id="k-name" placeholder="cth. Senarai harga">
+      <label>Teks <small>atau muat naik fail .txt / .md / .csv</small></label>
+      <textarea id="k-text" rows="7" placeholder="Tulis sebagai ayat biasa (bukan jadual) supaya AI faham dengan tepat."></textarea>
+      <div class="row" style="margin-top:6px"><input type="file" id="k-file" accept=".txt,.md,.csv,text/plain,text/markdown,text/csv"><button class="primary" id="k-add-text">Tambah teks</button></div>
+      <hr style="border:none;border-top:1px solid var(--line);margin:16px 0">
+      <label>Laman web awam</label>
+      <div class="row"><input id="k-url" placeholder="https://contoh.com/bantuan"><select id="k-depth" style="width:110px"><option value="0">Satu laman</option><option value="1" selected>Kedalaman 1</option><option value="2">Kedalaman 2</option><option value="3">Kedalaman 3</option></select></div>
+      <div style="margin-top:6px"><button class="primary" id="k-add-url">Tambah URL</button> <small>Hanya URL awam; alamat dalaman disekat.</small></div>
+      <hr style="border:none;border-top:1px solid var(--line);margin:16px 0">
+      <label>Uji carian (kata kunci dalam kandungan)</label>
+      <div class="row"><input id="k-q" placeholder="cth. harga pakej premium"><button id="k-search">Cari</button></div>
+      <div id="k-hits"></div>
+    </div>
+    <div class="col pad"><h3 style="margin-top:0">Sumber</h3><div id="k-list"></div></div>
+  </section>
+
+  <section class="view" id="v-progress"><div class="pad" style="max-width:760px;margin:0 auto;width:100%;overflow:auto" id="progress"></div></section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const state = { cfg: null, convs: [], sel: null, filter: 'open', agents: [], agentSel: null, sources: [], testHistory: [], testContact: null, thread: null };
+const SKILLS = [
+  ['assign', 'Assign ke team/pengguna/ejen AI', 'Cth: Jika pelanggan minta bercakap dengan orang, assign ke Sales Team.'],
+  ['close', 'Tutup perbualan', 'Cth: Jika pelanggan kata tiada soalan lagi, tutup dengan closing note Issue Resolved.'],
+  ['set_field', 'Kemas kini contact field', 'Cth: Simpan bajet dalam field Budget (nombor sahaja).'],
+  ['set_lifecycle', 'Kemas kini lifecycle stage', 'Cth: Jika Budget > 100, tetapkan Hot Lead.'],
+  ['tags', 'Kemas kini tag', 'Cth: Jika tanya harga, tambah tag Pricing.'],
+  ['comment', 'Tambah komen dalaman', 'Cth: Sebelum assign, tulis komen ringkas: isu, apa dah dicuba.'],
+];
+
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2600); }
+
+async function api(method, url, body) {
+  const token = localStorage.getItem('wa_token');
+  const res = await fetch(url, { method, headers: { ...(body ? { 'content-type': 'application/json' } : {}), ...(token ? { authorization: 'Bearer ' + token } : {}) }, body: body ? JSON.stringify(body) : undefined });
+  if (res.status === 401) {
+    const t = prompt('ADMIN_TOKEN diperlukan:');
+    if (t) { localStorage.setItem('wa_token', t); return api(method, url, body); }
+    throw new Error('Unauthorized');
+  }
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : null;
+  if (!res.ok && res.status !== 502) throw new Error(data?.error || res.statusText);
+  return data;
+}
+const act = async (fn, ok) => { try { const r = await fn(); if (ok) toast(ok); return r; } catch (e) { toast('⚠ ' + e.message); } };
+const ago = (t) => { if (!t) return ''; const s = (Date.now() - t) / 1000; return s < 60 ? 'baru' : s < 3600 ? Math.floor(s / 60) + ' min' : s < 86400 ? Math.floor(s / 3600) + ' j' : Math.floor(s / 86400) + ' h'; };
+
+// ---------- navigation ----------
+$('#nav').onclick = (e) => {
+  const v = e.target.dataset.v; if (!v) return;
+  document.querySelectorAll('#nav button').forEach((b) => b.classList.toggle('on', b === e.target));
+  document.querySelectorAll('.view').forEach((x) => x.classList.toggle('on', x.id === 'v-' + v));
+  if (v === 'agents') loadAgents(); if (v === 'knowledge') loadKnowledge(); if (v === 'progress') renderProgress();
+};
+
+function renderChips() {
+  const c = state.cfg; if (!c) return;
+  $('#chips').innerHTML = [
+    `<span class="chip ${c.llm === 'claude' ? 'ok' : 'warn'}" title="Penyedia LLM">${c.llm === 'claude' ? '🧠 Claude' : '🧪 LLM demo (tiada API key)'}</span>`,
+    `<span class="chip ${c.whatsappConfigured ? 'ok' : 'warn'}">${c.whatsappConfigured ? '📱 WhatsApp aktif' : '📱 WhatsApp dry-run'}</span>`,
+  ].join('');
+  $('#sim').hidden = !c.devSimulator;
+}
+
+// ---------- inbox ----------
+async function loadConvs() {
+  state.convs = await api('GET', '/api/conversations' + (state.filter === 'all' ? '' : '?status=' + state.filter));
+  renderConvs();
+}
+function handlerBadge(c) {
+  if (c.status === 'closed') return '<span class="badge b-closed">Ditutup</span>';
+  if (c.handler === 'ai') return '<span class="badge b-ai">🤖 AI</span>';
+  if (c.handler === 'human') return `<span class="badge b-human">👤 ${esc(c.assignee_user || 'Manusia')}</span>`;
+  return '<span class="badge b-none">Belum assign</span>';
+}
+function renderConvs() {
+  $('#conv-list').innerHTML = state.convs.length ? state.convs.map((c) => `
+    <div class="item ${state.sel === c.id ? 'sel' : ''}" data-id="${c.id}">
+      <div class="row sp"><b>${esc(c.contact_name || '+' + c.wa_id)}</b><small>${ago(c.last_at)}</small></div>
+      <div class="muted" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.last_body || '')}</div>
+      <div style="margin-top:4px">${handlerBadge(c)}</div>
+    </div>`).join('') : '<div class="empty">Tiada perbualan lagi.<br><small>Guna simulator di atas untuk cuba.</small></div>';
+}
+$('#conv-list').onclick = (e) => { const it = e.target.closest('.item'); if (it) openConv(Number(it.dataset.id)); };
+['open', 'closed', 'all'].forEach((f) => $('#f-' + f).onclick = () => { state.filter = f; ['open', 'closed', 'all'].forEach((x) => $('#f-' + x).classList.toggle('primary', x === f)); loadConvs(); });
+
+async function openConv(id) {
+  state.sel = id; renderConvs();
+  state.thread = await api('GET', '/api/conversations/' + id);
+  renderThread();
+}
+function tick(m) {
+  if (m.direction === 'in') return '';
+  if (m.status === 'failed') return `<span style="color:var(--bad)" title="${esc(m.error)}">⚠ gagal: ${esc(m.error || '')}</span>`;
+  return { pending: '⏳', sent: '✓', delivered: '✓✓', read: '<span style="color:var(--human)">✓✓</span>' }[m.status] || '';
+}
+function renderThread() {
+  const t = state.thread; if (!t) return;
+  const { conversation: c, contact, messages, comments, events } = t;
+  const items = [
+    ...messages.map((m) => ({ at: m.created_at, k: 'm', m })),
+    ...comments.map((m) => ({ at: m.created_at, k: 'c', m })),
+    ...events.map((m) => ({ at: m.created_at, k: 'e', m })),
+  ].sort((a, b) => a.at - b.at);
+  const who = { contact: '', ai: 'AI', human: 'Manusia', echo: 'Echo bot', system: 'Sistem' };
+  const body = items.map((i) => {
+    if (i.k === 'c') return `<div class="note">📝 <b>${esc(i.m.author)}</b>: ${esc(i.m.body)}</div>`;
+    if (i.k === 'e') return `<div class="evt">${i.m.type === 'reopened' ? '↩ perbualan dibuka semula' : '➜ ditugaskan kepada AI oleh ' + esc(i.m.payload.by || '')}</div>`;
+    const m = i.m;
+    return `<div class="bubble ${m.direction} ${m.sender}">${esc(m.body)}<div class="meta">${who[m.sender] ? esc(who[m.sender]) + ' · ' : ''}${new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ${tick(m)}</div></div>`;
+  }).join('');
+  const aiHandling = c.handler === 'ai' && c.status === 'open';
+  const ai = state.agents.filter((a) => a.status === 'active');
+  $('#thread-col').innerHTML = `<div class="thread">
+    <div class="row sp" style="padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap">
+      <div><b>${esc(contact.name || '+' + contact.wa_id)}</b> <small>+${esc(contact.wa_id)}</small> ${handlerBadge(c)}</div>
+      <div class="row">
+        ${aiHandling ? '<button id="a-take" class="primary">✋ Takeover</button>' : ''}
+        <select id="a-assign" style="width:auto"><option value="">Assign ke…</option>
+          ${ai.length ? `<optgroup label="Ejen AI">${ai.map((a) => `<option value="agent:${a.id}">${esc(a.emoji)} ${esc(a.name)}</option>`).join('')}</optgroup>` : ''}
+          <optgroup label="Team">${state.cfg.workspace.teams.map((x) => `<option value="team:${esc(x.name)}">${esc(x.name)}</option>`).join('')}</optgroup>
+          <optgroup label="Pengguna">${state.cfg.workspace.users.map((x) => `<option value="user:${esc(x)}">${esc(x)}</option>`).join('')}</optgroup>
+          <option value="none">Nyahtugas</option></select>
+        ${c.status === 'open' ? `<select id="a-close" style="width:auto"><option value="">Tutup…</option>${state.cfg.workspace.closing_notes.map((n) => `<option>${esc(n)}</option>`).join('')}<option value="__none">Tanpa nota</option></select>` : '<button id="a-reopen">Buka semula</button>'}
+      </div>
+    </div>
+    <div class="msgs" id="msgs">${body || '<div class="empty">Belum ada mesej.</div>'}</div>
+    <div class="composer">
+      ${aiHandling ? '<div class="banner">🤖 AI sedang mengendalikan perbualan ini. Tekan <b>Takeover</b> untuk balas sendiri.</div>' : ''}
+      <textarea id="c-text" placeholder="Tulis balasan… (Ctrl+Enter untuk hantar)" ${aiHandling ? 'disabled' : ''}></textarea>
+      <div class="row sp" style="margin-top:6px"><button id="c-note">📝 Simpan sebagai nota dalaman</button><button id="c-send" class="primary" ${aiHandling ? 'disabled' : ''}>Hantar</button></div>
+    </div></div>`;
+  const msgs = $('#msgs'); msgs.scrollTop = msgs.scrollHeight;
+  const id = c.id;
+  const reload = async () => { await loadConvs(); await openConv(id); };
+  if ($('#a-take')) $('#a-take').onclick = () => act(async () => { await api('POST', `/api/conversations/${id}/takeover`); await reload(); }, 'Anda ambil alih perbualan');
+  $('#a-assign').onchange = (e) => { const v = e.target.value; if (!v) return;
+    const [k, ...r] = v.split(':'); const name = r.join(':');
+    const body = v === 'none' ? { unassign: true } : k === 'agent' ? { agent_id: Number(name) } : { [k]: name };
+    act(async () => { await api('POST', `/api/conversations/${id}/assign`, body); await reload(); }, 'Ditugaskan'); };
+  if ($('#a-close')) $('#a-close').onchange = (e) => { if (!e.target.value) return;
+    act(async () => { await api('POST', `/api/conversations/${id}/status`, { status: 'closed', closing_note: e.target.value === '__none' ? null : e.target.value }); await reload(); }, 'Perbualan ditutup 🎉'); };
+  if ($('#a-reopen')) $('#a-reopen').onclick = () => act(async () => { await api('POST', `/api/conversations/${id}/status`, { status: 'open' }); await reload(); });
+  const send = () => { const text = $('#c-text').value.trim(); if (!text) return;
+    act(async () => { const r = await api('POST', `/api/conversations/${id}/messages`, { text }); if (r.messages?.some((m) => m.status === 'failed')) toast('⚠ ' + r.messages.find((m) => m.status === 'failed').error); await reload(); }); };
+  $('#c-send').onclick = send;
+  $('#c-text').onkeydown = (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) send(); };
+  $('#c-note').onclick = () => { const text = $('#c-text').value.trim(); if (!text) return; act(async () => { await api('POST', `/api/conversations/${id}/comments`, { text }); await reload(); }, 'Nota disimpan'); };
+
+  $('#side').innerHTML = `<h3 style="margin-top:0">Kenalan</h3><div class="kv">
+    <b>Nama</b><span>${esc(contact.name || '-')}</span><b>Telefon</b><span>+${esc(contact.wa_id)}</span><b>Emel</b><span>${esc(contact.email || '-')}</span>
+    <b>Lifecycle</b><span>${esc(contact.lifecycle || '-')}</span><b>Tag</b><span>${contact.tags.map((x) => `<span class="badge b-none">${esc(x)}</span>`).join(' ') || '-'}</span>
+    ${Object.entries(contact.fields).map(([k, v]) => `<b>${esc(k)}</b><span>${esc(v)}</span>`).join('')}</div>
+    <h3>Perbualan</h3><div class="kv"><b>Status</b><span>${c.status}</span><b>Handler</b><span>${c.handler}</span><b>Team</b><span>${esc(c.assignee_team || '-')}</span><b>Pengguna</b><span>${esc(c.assignee_user || '-')}</span>
+    ${c.closing_note ? `<b>Closing note</b><span>${esc(c.closing_note)}</span>` : ''}${c.summary ? `<b>Ringkasan</b><span>${esc(c.summary)}</span>` : ''}</div>`;
+}
+$('#sim-send').onclick = () => act(async () => {
+  const r = await api('POST', '/api/dev/simulate', { from: $('#sim-from').value, name: $('#sim-name').value, text: $('#sim-text').value });
+  $('#sim-text').value = ''; await loadConvs(); await openConv(r.conversation.id);
+});
+$('#sim-text').onkeydown = (e) => { if (e.key === 'Enter') $('#sim-send').click(); };
+
+// live updates
+function connectSSE() {
+  const token = localStorage.getItem('wa_token');
+  const es = new EventSource('/api/events' + (token ? '?token=' + encodeURIComponent(token) : ''));
+  let t; let pending = [];
+  es.onmessage = (ev) => {
+    pending.push(JSON.parse(ev.data)); // collect every event in the debounce window, not just the last one
+    clearTimeout(t);
+    t = setTimeout(async () => {
+      const batch = pending; pending = [];
+      await loadConvs();
+      if (state.sel && batch.some((e) => e.conversationId === state.sel)) { state.thread = await api('GET', '/api/conversations/' + state.sel); renderThread(); }
+      if (batch.some((e) => e.type === 'agent')) loadAgents(true);
+    }, 150);
+  };
+}
+
+// ---------- agents ----------
+async function loadAgents(quiet) {
+  state.agents = await api('GET', '/api/agents');
+  state.sources = await api('GET', '/api/knowledge');
+  $('#agent-list').innerHTML = state.agents.map((a) => `<div class="item ${state.agentSel === a.id ? 'sel' : ''}" data-id="${a.id}">
+    <div class="row sp"><b>${esc(a.emoji)} ${esc(a.name)}</b><span class="badge ${a.status === 'active' ? 'b-live' : 'b-none'}">${a.status === 'active' ? 'Live v' + a.published_version : 'Tidak aktif'}</span></div>
+    <small>${esc(a.description || '')}</small>${state.cfg.defaultAgentId === a.id ? '<div><span class="badge b-ai">Default assignee</span></div>' : ''}</div>`).join('') || '<div class="empty">Belum ada ejen.</div>';
+  if (state.agentSel && !quiet) renderAgentEditor();
+}
+$('#agent-list').onclick = (e) => { const it = e.target.closest('.item'); if (it) { state.agentSel = Number(it.dataset.id); state.testHistory = []; state.testContact = null; loadAgents(); } };
+
+const TEMPLATES = {
+  Receptionist: { emoji: '🛎️', description: 'Sambut pelanggan dan salurkan ke team yang betul.', instructions: '# CONTEXT\n* Anda bercakap dengan seseorang yang menghubungi syarikat kami melalui WhatsApp.\n* Matlamat: fahami keperluan dan salurkan ke team yang betul.\n\n# ROLE & COMMUNICATION STYLE\n* Mesra, ringkas, satu soalan sekali. Guna Bahasa Melayu santai.\n\n# TOP-LEVEL FLOW\n1. Sapa: "Hai $contact.firstname! Boleh saya bantu apa hari ini?"\n2. Jika berkaitan harga/pembelian -> assign ke Sales Team.\n3. Jika berkaitan masalah/aduan -> assign ke Support Team.\n4. Jika tidak jelas selepas dua soalan -> assign ke Support Team.\n5. Beritahu pelanggan seseorang akan membantu sebentar lagi.\n\n# BOUNDARIES\n* Jangan beri nasihat perubatan/guaman/kewangan. Jangan reka harga.', skills: { assign: 'Jika pelanggan minta bercakap dengan orang, assign ke Support Team.', comment: 'Sebelum assign, tulis komen ringkas: isu pelanggan dan apa yang dah dibincangkan.', close: 'Jika pelanggan sahkan tiada soalan lagi, tutup dengan closing note Issue Resolved.' } },
+  Sales: { emoji: '💼', description: 'Kelayakkan lead: bajet & lokasi.', instructions: '# CONTEXT\n* Anda bercakap dengan prospek yang berminat dengan produk kami.\n\n# ROLE & COMMUNICATION STYLE\n* Mesra, tidak mendesak. Satu soalan sekali. Balasan pendek.\n\n# TOP-LEVEL FLOW\n1. Sapa $contact.firstname.\n2. Tanya bajet (nombor) dan lokasi (negara). Simpan dalam field Budget dan Location.\n3. Jika Budget > 100 dan Location ialah Malaysia -> lifecycle Hot Lead, tanya "Nak tempah demo atau cakap dengan team kami?"; jika ya assign ke Sales Team.\n4. Jika tidak layak -> lifecycle Unqualified dan terus jawab soalan mereka.\n\n# BOUNDARIES\n* Jangan beritahu pelanggan sama ada mereka layak atau tidak.\n* Jangan tawar diskaun.', skills: { assign: 'Jika pelanggan mahu demo atau bercakap dengan orang, assign ke Sales Team secara round robin.', set_field: 'Simpan bajet dalam Budget (nombor) dan negara dalam Location.', set_lifecycle: 'Hot Lead jika Budget > 100 dan Location = Malaysia; selain itu Unqualified.', close: '', tags: '', comment: 'Sebelum assign, tulis komen: bajet, lokasi, minat.' } },
+};
+
+$('#agent-new').onclick = () => {
+  const names = Object.keys(TEMPLATES);
+  const pick = prompt('Templat? Taip: ' + names.join(' / ') + ' (atau kosongkan untuk ejen kosong)', names[0]);
+  if (pick === null) return;
+  const tpl = TEMPLATES[names.find((n) => n.toLowerCase() === pick.trim().toLowerCase())];
+  const name = prompt('Nama ejen:', tpl ? (pick.trim() + ' Agent').replace(/ Agent Agent$/, ' Agent') : 'Ejen Baharu');
+  if (!name) return;
+  act(async () => {
+    const skills = {}; for (const [k] of SKILLS) skills[k] = { enabled: !!(tpl && tpl.skills[k] !== undefined), prompt: tpl?.skills[k] || '' };
+    const a = await api('POST', '/api/agents', { name, emoji: tpl?.emoji, description: tpl?.description || '', draft: tpl ? { instructions: tpl.instructions, skills, wait_seconds: 3 } : {} });
+    state.agentSel = a.id; state.testHistory = []; await loadAgents();
+  }, 'Ejen dicipta (draf). Semak, uji, kemudian Publish.');
+};
+
+function renderAgentEditor() {
+  const a = state.agents.find((x) => x.id === state.agentSel); if (!a) return;
+  const d = a.draft, lim = state.cfg.instructionsLimit;
+  $('#agent-edit').innerHTML = `
+    <div class="row sp"><h3 style="margin:0">${esc(a.emoji)} ${esc(a.name)}</h3><span class="badge ${a.status === 'active' ? 'b-live' : 'b-none'}">${a.status === 'active' ? 'Live v' + a.published_version : 'Tidak aktif'}</span></div>
+    <div class="row" style="margin-top:8px"><div style="width:70px"><label>Emoji</label><input id="e-emoji" value="${esc(a.emoji)}"></div><div style="flex:1"><label>Nama <small>(mesti unik; digunakan dalam assign)</small></label><input id="e-name" value="${esc(a.name)}"></div></div>
+    <label>Penerangan</label><input id="e-desc" value="${esc(a.description)}">
+    <label>Instructions <small id="e-count"></small></label>
+    <textarea id="e-ins" rows="14" placeholder="# CONTEXT&#10;# ROLE & COMMUNICATION STYLE&#10;# TOP-LEVEL FLOW&#10;# BOUNDARIES">${esc(d.instructions)}</textarea>
+    <small>Guna nama tepat untuk team/field/stage. Variabel: <code>$contact.firstname</code> <code>$contact.budget</code>.</small>
+    <div class="row"><div style="flex:1"><label>Model</label><input id="e-model" value="${esc(d.model)}"></div><div style="width:150px"><label>Wait time (saat)</label><input id="e-wait" type="number" min="0" max="300" step="0.5" value="${d.wait_seconds}"></div></div>
+    <label>Knowledge <small>(AI hanya guna sumber yang dipilih)</small></label>
+    <div>${state.sources.length ? state.sources.map((s) => `<label style="font-weight:400;margin:2px 0"><input type="checkbox" class="e-k" value="${s.id}" ${d.knowledge_ids.includes(s.id) ? 'checked' : ''} ${s.status !== 'completed' ? 'disabled' : ''} style="width:auto"> ${esc(s.name)} <small>(${s.chunks} bahagian)</small></label>`).join('') : '<small>Tiada sumber lagi — tambah di tab Knowledge.</small>'}</div>
+    <label>AI skills</label>
+    ${SKILLS.map(([k, title, ph]) => `<div class="skill ${d.skills[k].enabled ? 'on' : ''}"><label style="margin:0;font-weight:600"><input type="checkbox" class="e-s" data-k="${k}" ${d.skills[k].enabled ? 'checked' : ''} style="width:auto"> ${title}</label>
+      <textarea class="e-sp" data-k="${k}" rows="2" placeholder="${esc(ph)}" ${d.skills[k].enabled ? '' : 'hidden'}>${esc(d.skills[k].prompt)}</textarea></div>`).join('')}
+    <div class="row" style="margin-top:14px;flex-wrap:wrap">
+      <button id="e-save">💾 Simpan draf</button><button id="e-pub" class="primary">🚀 Publish${a.status === 'active' ? ' versi baharu' : ''}</button>
+      ${a.status === 'active' ? '<button id="e-unpub" class="danger">Nyahaktif</button>' : ''}
+      <label style="margin:0;font-weight:400"><input type="checkbox" id="e-def" ${state.cfg.defaultAgentId === a.id ? 'checked' : ''} ${a.status !== 'active' ? 'disabled' : ''} style="width:auto"> Default assignee</label></div>
+    <p><small>Draf tidak menjejaskan pelanggan sehingga anda tekan Publish. Setiap Publish mencipta versi baharu.</small></p>`;
+  const upd = () => { $('#e-count').textContent = `${$('#e-ins').value.length}/${lim}`; $('#e-count').style.color = $('#e-ins').value.length > lim ? 'var(--bad)' : ''; };
+  $('#e-ins').oninput = upd; upd();
+  document.querySelectorAll('.e-s').forEach((cb) => cb.onchange = () => { const box = document.querySelector(`.e-sp[data-k=${cb.dataset.k}]`); box.hidden = !cb.checked; cb.closest('.skill').classList.toggle('on', cb.checked); });
+  const collect = () => ({ name: $('#e-name').value, emoji: $('#e-emoji').value, description: $('#e-desc').value, draft: {
+    instructions: $('#e-ins').value, model: $('#e-model').value, wait_seconds: Number($('#e-wait').value),
+    knowledge_ids: [...document.querySelectorAll('.e-k:checked')].map((x) => Number(x.value)),
+    skills: Object.fromEntries(SKILLS.map(([k]) => [k, { enabled: document.querySelector(`.e-s[data-k=${k}]`).checked, prompt: document.querySelector(`.e-sp[data-k=${k}]`).value }])) } });
+  const save = async () => { await api('PUT', '/api/agents/' + a.id, collect()); await loadAgents(); };
+  $('#e-save').onclick = () => act(save, 'Draf disimpan ✓');
+  $('#e-pub').onclick = () => act(async () => { await save(); await api('POST', `/api/agents/${a.id}/publish`); await loadAgents(); }, 'Ejen live! 🚀 Cuba hantar mesej dari simulator.');
+  if ($('#e-unpub')) $('#e-unpub').onclick = () => act(async () => { await api('POST', `/api/agents/${a.id}/unpublish`); state.cfg = await api('GET', '/api/config'); await loadAgents(); }, 'Ejen dinyahaktif');
+  $('#e-def').onchange = (e) => act(async () => { await api('PUT', '/api/settings/default-agent', { agent_id: e.target.checked ? a.id : null }); state.cfg = await api('GET', '/api/config'); await loadAgents(); }, e.target.checked ? 'Perbualan baharu akan dikendalikan oleh ejen ini' : 'Default assignee dibuang');
+  renderTestPanel();
+}
+
+function renderTestPanel() {
+  const a = state.agents.find((x) => x.id === state.agentSel); if (!a) return;
+  const h = state.testHistory;
+  $('#agent-test').innerHTML = `<div class="row sp"><h3 style="margin:0">🧪 Uji ejen</h3><button id="t-reset">Reset</button></div>
+    <small>Menguji <b>draf</b> semasa. Tiada mesej dihantar dan tiada data sebenar diubah.</small>
+    <div id="t-msgs" style="margin:10px 0;display:flex;flex-direction:column;gap:6px">${h.map((m) => m.role === 'tool' ? m.html : `<div class="bubble ${m.role === 'user' ? 'in' : 'out ai'}">${esc(m.text)}</div>`).join('') || '<small>Tulis mesej pelanggan di bawah.</small>'}</div>
+    <div class="row"><input id="t-in" placeholder="Mesej pelanggan…"><button class="primary" id="t-send">Hantar</button></div>
+    ${state.testContact ? `<h4>Keadaan kenalan (simulasi)</h4><div class="kv"><b>Lifecycle</b><span>${esc(state.testContact.lifecycle || '-')}</span><b>Tag</b><span>${esc(state.testContact.tags.join(', ') || '-')}</span>${Object.entries(state.testContact.fields).map(([k, v]) => `<b>${esc(k)}</b><span>${esc(v)}</span>`).join('')}</div>` : ''}`;
+  $('#t-reset').onclick = () => { state.testHistory = []; state.testContact = null; renderTestPanel(); };
+  const send = () => { const text = $('#t-in').value.trim(); if (!text) return;
+    h.push({ role: 'user', text }); $('#t-in').value = ''; renderTestPanel(); $('#t-send').disabled = true;
+    const hist = h.filter((m) => m.role !== 'tool').map(({ role, text }) => ({ role, text }));
+    api('POST', `/api/agents/${a.id}/test`, { history: hist, contact: state.testContact || undefined }).then((r) => {
+      state.testContact = r.state.contact;
+      const html = (r.toolCalls.map((t) => `<div class="tool ${t.ok ? '' : 'err'}">🔧 <b>${esc(t.name)}</b> ${esc(JSON.stringify(t.input))}<br><small>${esc(t.message).slice(0, 160)}</small></div>`).join('')
+        + (r.sources.length ? `<div class="tool">📚 ${r.sources.length} sumber: ${[...new Set(r.sources.map((s) => esc(s.source)))].join(', ')}</div>` : '')
+        + (r.error ? `<div class="tool err">⚠ ${esc(r.error)}</div>` : ''));
+      if (html) h.push({ role: 'tool', html });
+      if (r.reply) h.push({ role: 'assistant', text: r.reply }); else if (!r.error) h.push({ role: 'tool', html: '<div class="tool">(tiada balasan dihantar)</div>' });
+      renderTestPanel();
+    }).catch((e) => { h.push({ role: 'tool', html: `<div class="tool err">⚠ ${esc(e.message)}</div>` }); renderTestPanel(); });
+  };
+  $('#t-send').onclick = send; $('#t-in').onkeydown = (e) => { if (e.key === 'Enter') send(); }; $('#t-in').focus();
+}
+
+// ---------- knowledge ----------
+async function loadKnowledge() {
+  state.sources = await api('GET', '/api/knowledge');
+  $('#k-list').innerHTML = state.sources.length ? state.sources.map((s) => `<div class="item" style="cursor:default"><div class="row sp"><b>${s.type === 'url' ? '🌐' : '📄'} ${esc(s.name)}</b><span class="badge ${s.status === 'completed' ? 'b-live' : 'b-err'}">${s.status === 'completed' ? 'Siap' : 'Ralat'}</span></div>
+    <small>${s.chunks} bahagian · ${(s.chars / 1000).toFixed(1)}k aksara${s.uri ? ' · ' + esc(s.uri) : ''}</small>${s.error ? `<div style="color:var(--bad);font-size:12px">${esc(s.error)}</div>` : ''}
+    <div><button class="danger" data-del="${s.id}" style="margin-top:4px">Padam</button></div></div>`).join('') : '<div class="empty">Belum ada sumber. Tambah teks atau URL di kiri.</div>';
+}
+$('#k-list').onclick = (e) => { const id = e.target.dataset.del; if (id && confirm('Padam sumber ini?')) act(async () => { await api('DELETE', '/api/knowledge/' + id); loadKnowledge(); }, 'Dipadam'); };
+$('#k-file').onchange = async (e) => { const f = e.target.files[0]; if (!f) return; if (f.size > 2_000_000) return toast('⚠ Fail terlalu besar (maks 2MB)'); $('#k-text').value = await f.text(); if (!$('#k-name').value) $('#k-name').value = f.name; };
+$('#k-add-text').onclick = () => act(async () => { await api('POST', '/api/knowledge', { name: $('#k-name').value, text: $('#k-text').value }); $('#k-text').value = ''; $('#k-name').value = ''; loadKnowledge(); }, 'Sumber ditambah — AI boleh guna selepas anda pilih di editor ejen ✓');
+$('#k-add-url').onclick = () => { $('#k-add-url').disabled = true; act(async () => { await api('POST', '/api/knowledge', { name: $('#k-name').value, url: $('#k-url').value, depth: Number($('#k-depth').value) }); $('#k-url').value = ''; loadKnowledge(); }, 'URL diproses').finally(() => $('#k-add-url').disabled = false); };
+$('#k-search').onclick = () => act(async () => { const r = await api('POST', '/api/knowledge/search', { query: $('#k-q').value });
+  $('#k-hits').innerHTML = r.hits.length ? r.hits.map((h) => `<div class="hit"><small>${esc(h.source)}</small>\n${esc(h.text)}</div>`).join('') : '<p class="muted">Tiada padanan. Cuba kata kunci yang ada dalam kandungan (bukan tajuk dokumen).</p>'; });
+
+// ---------- progress ----------
+const MILESTONES = [
+  ['Webhook WhatsApp + echo bot', 'Mesej masuk disahkan (HMAC), disimpan, dibalas; idempoten; tetingkap 24 jam.', true],
+  ['Inbox + handover manual', 'Senarai, thread, takeover, assign, tutup/buka semula, nota dalaman, live update.', true],
+  ['AI Agent asas', 'Instructions, variabel, wait time (debounce), versi draf/publish, panel ujian.', true],
+  ['AI skills', 'Assign, close, field, lifecycle, tag, komen — nama mesti tepat, ralat bantu AI membetulkan diri.', true],
+  ['Knowledge + RAG', 'Teks & URL (selamat SSRF), carian BM25, sumber dipilih per ejen, sumber dipaparkan semasa ujian.', true],
+  ['Workflow engine (Ask a Question, Branch, Wait, Assign)', 'Menu berstruktur → AI sebagai fallback.', false],
+  ['Builder UI (Review prompt, kanvas workflow)', 'Linter prompt & kanvas seret-lepas.', false],
+  ['HTTP skill, template WhatsApp & follow-up, metrik', 'Sedia produksi.', false],
+];
+function renderProgress() {
+  const done = MILESTONES.filter((m) => m[2]).length, nextIdx = MILESTONES.findIndex((m) => !m[2]);
+  $('#progress').innerHTML = `<h2 style="margin-top:0">Kemajuan pembinaan</h2>
+    <div class="row sp"><b>${done} / ${MILESTONES.length} milestone siap</b><span>🎉</span></div><div class="bar"><i style="width:${(done / MILESTONES.length) * 100}%"></i></div>
+    ${MILESTONES.map((m, i) => `<div class="ms ${m[2] ? 'done' : i === nextIdx ? 'next' : ''}"><div class="dot">${m[2] ? '✓' : i + 1}</div><div><b>${esc(m[0])}</b>${i === nextIdx ? ' <span class="badge b-live">Seterusnya</span>' : ''}<div class="muted">${esc(m[1])}</div></div></div>`).join('')}`;
+}
+
+// ---------- boot ----------
+(async function boot() {
+  try {
+    state.cfg = await api('GET', '/api/config'); renderChips();
+    state.agents = await api('GET', '/api/agents');
+    await loadConvs(); connectSSE(); renderProgress();
+    setInterval(renderConvs, 30000);
+  } catch (e) { document.body.insertAdjacentHTML('beforeend', `<div class="toast show">⚠ ${esc(e.message)}</div>`); }
+})();
+</script>
+</body>
+</html>

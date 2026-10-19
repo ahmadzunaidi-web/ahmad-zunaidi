@@ -1,0 +1,16 @@
+{
+  "timezone": "Asia/Kuala_Lumpur",
+  "teams": [
+    { "name": "Sales Team", "members": ["Aisyah", "Hafiz"] },
+    { "name": "Support Team", "members": ["Nur"] }
+  ],
+  "users": ["Aisyah", "Hafiz", "Nur"],
+  "lifecycle_stages": ["New Lead", "Hot Lead", "Qualified", "Unqualified", "Customer"],
+  "custom_fields": [
+    { "name": "Budget", "type": "number" },
+    { "name": "Location", "type": "text" },
+    { "name": "Company", "type": "text" }
+  ],
+  "closing_notes": ["Issue Resolved", "No Response", "Not Interested"],
+  "tags": ["Pricing", "Demo", "VIP"]
+}
