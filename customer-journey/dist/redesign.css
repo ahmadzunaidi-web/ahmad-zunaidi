@@ -291,3 +291,4 @@ a{color:var(--accent-strong)}
 .docrow>input[type=file]{grid-column:1/-1;width:100%;max-width:none}
 .docrow>.upl{grid-column:1/-1;margin-top:0}
 .docrow .file{word-break:normal;overflow-wrap:anywhere;color:var(--muted)}
+.demo .btn{white-space:nowrap;flex:0 0 auto}
