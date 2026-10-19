@@ -1,7 +1,9 @@
 # respond.io AI Agent — Blueprint Rebuild (A–Z)
 
 > **Kaedah:** analisis tingkah laku produk daripada dokumentasi & blog awam respond.io (clean-room). Bukan decompile / bukan salin kod atau prompt proprietari.
-> **Had:** domain respond.io disekat oleh egress container ni, jadi saya baca ringkasan carian, bukan halaman penuh. Label: **[DOC]** = disahkan dokumentasi awam, **[3P]** = sumber pihak ketiga (sahkan), **[REKA]** = reka bentuk cadangan saya untuk rebuild (bukan fakta tentang respond.io).
+> **Kemas kini 2026-10-19:** akses `respond.io` dah dibuka; 15 halaman help rasmi dibaca penuh (bukan lagi ringkasan carian). Bahagian **1A** di bawah ialah spesifikasi primer dan **mengatasi** angka/andaian [3P] dalam bahagian 1.
+> Label: **[DOC]** = disahkan dokumentasi rasmi, **[3P]** = pihak ketiga (belum disahkan), **[REKA]** = reka bentuk cadangan saya untuk rebuild (bukan fakta tentang respond.io).
+> Masih belum dibaca: *Advanced Settings* (wait time), *How to Review/Test AI Agents*, skill Assign/Close/Add comments/Handle Calls (halaman individu), Developer API.
 
 ---
 
@@ -93,6 +95,78 @@ Ada halaman rasmi *AI Agents: Known Limitations and Workarounds* – belum dapat
 
 ---
 
+## 1A. Spesifikasi disahkan (halaman rasmi dibaca penuh) [DOC]
+
+### A. Konfigurasi AI Agent
+- Medan: **emoji** (tiada upload avatar), **nama**, **description**, **Instructions**, **Knowledge sources**, **AI skills**.
+- Status: mula **Inactive**; **Save** (simpan) vs **Publish**. Selepas publish, Save terus ubah versi live — **tiada draf** (jangan tiru ini; rebuild patut ada draf/versi).
+- Template: **Receptionist** (greet → capture → route → close), **Sales Agent** (recommend, escalate, update lifecycle/field, close), **Support Agent** (jawab dari knowledge, eskalasi, close). Template Receptionist & Support hanya 2 skill pra-aktif; Sales 4.
+- **Review**: semakan statik instructions + skills (rujukan tak sah, skill tak dikonfigur, arahan tak disokong/bercanggah) + **Apply fixes**. Auto-flag semasa save/publish.
+- **Test AI Agent**: panel chat simulator, boleh reset, ubah contact field ujian, upload PDF/imej; tunjuk event tindakan; balasan tunjuk label "{#} sources". Tiada kesan ke pelanggan sebenar.
+- **Optimize** (prompt optimizer) untuk instructions & skill prompt.
+- Cara aktif: assign manual (dropdown Assignee), **default assignee**, atau step **Assign To** dalam workflow.
+- **Takeover**: butang untuk manusia ambil alih serta-merta → AI berhenti balas sehingga di-assign semula ke AI. Tersembunyi jika ada sekatan (baki WABA tak cukup, contact disekat, tiada channel).
+- Latensi: pemprosesan **10–15s**, kadang >20s (carian knowledge + LLM + beban provider). Ada tetapan **wait time** (tunggu contact habis menaip sebelum balas).
+- Data **tidak digunakan untuk train model**.
+- Plan: AI Agents = Growth+; HTTP skill = Advanced/Enterprise.
+
+### B. Instructions (prompt)
+- **Had 10,000 aksara** (disahkan). Arahan tingkah laku **mesti** dalam Instructions — Knowledge Source hanya untuk fakta (arahan dalam knowledge = tak stabil). Alat luar tak boleh tambah arahan.
+- Elemen: **Context**, **Role & communication style**, **Flow** (Top-level + Scenarios/Sub-level), **Boundaries**, **Follow-up**.
+- Pembolehubah dalam prompt: `@Nama` (team/user/AI agent lain), `$contact.field` (cth `$contact.firstname`, `$contact.lifecycle`). AI **hanya nampak nilai**, bukan label → rujuk "Email field" untuk *update*, jangan guna `$contact.email` sebagai sasaran kemas kini.
+- Assign boleh nyatakan strategi: **round robin** / **least open conversations**; "anyone in the Workspace".
+- Nama mesti **sepadan tepat** (stage, field, closing note, team, user) — jika tak, kemas kini **gagal**.
+- Dua tempat arahan: kotak Instructions (skrip berurutan) dan tetapan skill (peraturan bila-bila-masa). Disyorkan tulis kedua-duanya; skill mesti **dihidupkan** walau disebut dalam instructions.
+- **Follow-up**: dalam prompt, "jika tiada balasan selepas X" — setiap follow-up ≤ **24j** dari mesej sebelumnya, maks **5** per prompt; berhenti bila contact balas / unassigned / closed / AI nilai contact tak berminat atau objektif tercapai; tak boleh pilih antara dua urutan; luar tetingkap WhatsApp 24j mesej gagal tapi skill tetap jalan.
+- **Konteks auto-prepend**: nama channel + channel ID; **Ads Context** (Meta/TikTok: platform, campaign, ad group, ad name) jika entri iklan dalam 20 mesej terakhir; **Assignment Event** (bila AI di-assign oleh manusia/workflow/AI lain); **Conversation Reopened Event**. Hanya **event terkini** dan hanya dalam tetingkap konteks.
+
+### C. Had platform (peta terus kepada spesifikasi runtime)
+| Perkara | Nilai |
+|---|---|
+| Tetingkap konteks | **20 mesej terkini**; tak nampak internal comment; tak nampak mesej yang di-*reply-to* |
+| Temperature | tiada kawalan (kawal melalui prompt) |
+| Silent mode | prompt "NO-REPLY POLICY" di atas sekali → balasan kosong, skill masih jalan; composer manusia dilumpuhkan bila AI assigned |
+| Assign via API/n8n/Make | **tak** picu balasan AI (elak bulk-reply); AI balas bila contact hantar mesej |
+| Unassign | AI biasanya hantar 1 balasan terakhir; jika AI unassign sendiri → sentiasa balas; workaround: arahan "kosongkan response" + workflow Send Message → Unassign |
+| Attachment keluar | pdf/docx/pptx/jpg/jpeg/png; maks **5 per balasan**; URL mesti wujud dalam knowledge/instructions/respons API; perlu klausa "ATTACHMENT AUTHORIZATION"; tiada URL berlogin; video/voice/sticker tak disokong |
+| Mesej masuk dibaca | teks; imej+PDF (hingga 5 fail terkini); audio (transkrip); lokasi; contact card; kad/quick reply/template WA/katalog/order/list reply; video/file/sticker = nama fail sahaja; reaksi, komen→DM, story mention, custom payload = `[Unsupported message]` |
+| Skill sebelum balas | skill dilaksana **sebelum** teks balasan dijana |
+| Status AI dalam workflow | sentiasa "Offline" (AI tetap balas 24/7) |
+| Konflik | assign lalu unassign dalam satu giliran → mesej gagal; jangan duplikasi logik workflow & skill |
+
+### D. Skills (9)
+Close conversations (ringkasan auto; boleh matikan; closing note), Assign to agent/team (user, team, AI lain; round robin/least open), Update Lifecycle stage, Update Contact fields, Update tags, **Trigger Workflow**, **Add comments** (internal), Handle Calls, **Make HTTP requests**.
+- **Trigger Workflow**: rujuk dengan `!nama_workflow`; workflow mesti *published*; nama sama tepat (case-sensitive); **tiada data dihantar** AI→workflow dan **tiada hasil balik** ke AI (fire-and-forget); duplikasi logik → mesej/kemas kini berganda.
+- Skill (update field, close, assign, lifecycle) boleh jadi **trigger workflow** (Lifecycle Updated, Contact Field Updated, dll.).
+- **Make HTTP requests**: maks **10 action/agent**; setiap action: nama, "bila & bagaimana", **input** (nama ≤30 aksara `a-z0-9_`, format Text/Number/Boolean/Date, deskripsi, array), kaedah, URL, query, header, JSON body. Pembolehubah `$agent.nama` & `$contact.field`. Had per action: **20 input, 50 param, 50 header**. AI tunggu respons & tafsir JSON (tiada pemetaan manual). Jika input tiada → AI tanya contact dulu. 2xx = berjaya. **Tiada OAuth 2.0** (hanya API key/token statik). Bug diketahui: field dikemas kini & digunakan dalam giliran sama → hantar nilai lama. Event pelaksanaan hanya dalam panel Test.
+
+### E. Knowledge
+- Fail: pdf, txt, md, csv, docx, pptx, ppsx; imej jpeg/png/bmp/webp/tiff. Web: URL awam sahaja (tiada Google Sheets → export CSV).
+- Had: **100 fail/workspace**, **20MB** jumlah storan workspace, **20MB/fail** (trial 1MB), upload 5 serentak, **3 sumber** diproses selari, **50 tambah/edit per hari**.
+- Crawler: depth default **3** (maks 100), tambah sitemap (default hidup), hingga **5 URL tambahan**, **include/exclude URL globs** (`*` satu segmen, `**` semua tahap), resync manual/berjadual, **View Logs** (URL dikunjungi, saiz kandungan), timeout ≤1 jam → *Partially Completed*.
+- Status: Completed / In Progress / Error / Partially Completed (+Resync failed).
+- Diindeks automatik (beberapa minit). Hanya sumber yang **dipilih per agent** digunakan; UI papar 4 dahulu.
+- **Had carian**: AI tak boleh pilih/prioritikan dokumen dan **tak cari ikut tajuk dokumen** — hanya kata kunci dalam kandungan → instructions patut sebut kata kunci carian.
+
+### F. Workflow (disahkan)
+- **11 trigger**: Conversation Opened, Conversation Closed, Contact Tag Updated, Contact Field Updated, Shortcut (Inbox), **Incoming Webhook** (HTTP POST), Click-to-Chat Ads, Manual Trigger, TikTok Messaging Ads, Lifecycle Updated, Call Ended. **Satu trigger per workflow; tiada trigger berjadual/masa.**
+- **17 step**: AI Objective (legacy), Send a Message, Ask a Question, Assign To, Branch, Update Contact Tag, Update Contact Field, Open Conversation, Close Conversation, Add Comment, Jump To, Wait, Trigger Another Workflow, Date & Time, HTTP Request, Add Google Sheets Row, Send Conversions API Event (Meta), Send TikTok Lower Funnel Event.
+- Had: **100 step/workflow**, **150 workflow/workspace**. Status Draft / Published / Stopped; edit hanya bila Stopped; **stop → semua contact dikeluarkan dan tak didaftar semula**; ada **Test** (kod ujian, nilai trigger dummy), clone, Exit Conditions (mesej keluar/masuk/assign manual menghentikan workflow untuk contact tu).
+- **Ask a Question**: jenis Text, Multiple Choice (≤**10** pilihan, ≤**20 aksara**), Number (min/max), Date (pelbagai format), Phone, Email, URL, Rating 1–5, Location. Simpan jawapan ke **Contact Field / Variable / Tag** (tag untuk MC sahaja). Timeout ≤7 hari (default 7); cawangan **Failure** untuk jawapan tak sah/tak sepadan. Hantar di **Last Interacted Channel**. Gagal jika tiada channel / timeout / mesej gagal (tetingkap tutup, API key tamat) → contact keluar workflow. Jika conversation ditutup semasa menunggu, balasan tak buka semula.
+- **Assign To**: user/AI agent tertentu, user dalam team, user dalam workspace, unassign; logik round robin / least open; "online sahaja"; "kurang dari N open"; barisan menunggu hingga timeout (default 7 hari); gagal jika user dipadam/team kosong.
+- Pola kunci: Ask a Question (MC) → Failure → Assign To AI Agent; Jump To untuk ulang soalan; Wait untuk follow-up berstruktur.
+
+### G. Implikasi terus kepada rebuild
+1. Konteks AI = **20 mesej** + blok auto (channel, ads, events) + nilai contact → simpan fakta penting di **contact field/lifecycle**, bukan sejarah.
+2. Skill = **tool** yang dilaksana sebelum balasan; nama parameter mesti padan tepat (validasi + ralat jelas).
+3. Workflow ↔ AI **longgar** (Trigger Workflow tanpa data). Dalam rebuild boleh lebih baik: benarkan hantar argumen dan terima hasil.
+4. Pisahkan **Instructions** (tingkah laku) dan **Knowledge** (fakta); amaran UI jika arahan dikesan dalam knowledge.
+5. Bina **Review** (linter prompt), **Test** (simulator + trace), **Takeover**, **versi draf/publish** sejak awal.
+6. Follow-up = penjadual per conversation (≤24j, ≤5), dibatalkan bila contact balas.
+7. Elak "bulk reply" bila assign via API (ikut rekaan respond.io) atau jadikan pilihan.
+
+---
+
 ## 2. Reka bentuk rebuild [REKA]
 
 ### 2.1 Stack cadangan (mudah, boleh hidup solo)
@@ -113,7 +187,10 @@ channel(id, workspace_id, type='whatsapp', waba_id, phone_number_id, token_enc, 
 contact(id, workspace_id, wa_id, name, lifecycle_stage, tags[], custom_fields jsonb, assignee_id, ai_agent_id null)
 conversation(id, contact_id, channel_id, status[open|closed], opened_at, last_inbound_at, handler[ai|human|workflow])
 message(id, conversation_id, direction, type, body jsonb, wa_message_id, status, created_at)
-ai_agent(id, workspace_id, name, instructions text, model, knowledge_ids[], skills jsonb, handover_team_id, published bool)
+ai_agent(id, workspace_id, emoji, name, description, instructions text(<=10000), model, knowledge_ids[], wait_seconds, status[inactive|active], live_version_id)
+ai_agent_version(id, agent_id, instructions, skills jsonb, created_by, created_at)   -- draf/publish (lebih baik drpd respond.io)
+followup_job(id, conversation_id, agent_id, run_at, step jsonb, cancelled bool)         -- maks 5, <=24j, batal bila contact balas
+conversation_event(id, conversation_id, type[assigned|reopened|ad_entry], payload, created_at)  -- disuntik ke konteks AI
 ai_skill(id, agent_id, type, name, config jsonb, prompt text)   -- type: assign|close|set_field|set_lifecycle|tag|trigger_workflow|http
 knowledge_source(id, workspace_id, type[file|url], uri, status)
 knowledge_chunk(id, source_id, text, embedding vector(1024), meta jsonb)
@@ -134,7 +211,9 @@ buildContext():
   system = agent.instructions
            + "Nama team sah: …; Field sah: …; Lifecycle sah: …"      // nama kanonik
            + ringkasan contact (field, lifecycle, tags)
-  history = N mesej terakhir (token budget, ringkas yang lama)
+  history = 20 mesej terakhir sahaja (seperti respond.io); abaikan internal comment
+  + blok auto: channel name/ID, Ads Context, event terkini (assigned/reopened)
+  + debounce wait_seconds sebelum jana balasan (tunggu contact habis menaip)
   tools   = skills → tool definitions (nama, deskripsi=prompt skill, JSON schema parameter)
   + tool khas: search_knowledge(query)   // RAG
 
