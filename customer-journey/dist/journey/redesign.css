@@ -27,7 +27,7 @@ body::before{display:none}
 .card,.review-card,.review-teaser{box-shadow:var(--shadow-md)}
 .card{padding:22px}
 .card+.card{margin-top:16px}
-.card h3,.cardhead h3{font-size:17px;letter-spacing:-.02em;font-weight:650;color:var(--text)}
+.card h3,.cardhead h3{font-size:17px;letter-spacing:-.02em;font-weight:600;color:var(--text)}
 .card:hover,.rrow:hover{border-color:var(--line)}
 
 /* Page frame */
@@ -35,7 +35,7 @@ body::before{display:none}
 .brand{font-size:19px;letter-spacing:-.04em;color:var(--text)}
 .brand b{color:var(--accent);text-shadow:none}
 .brand-sub{color:var(--faint)}
-.navbtn{border:0;color:var(--muted);font-weight:550;border-radius:var(--r-ctl);padding:12px 14px;transition:background-color 160ms ease,color 160ms ease}
+.navbtn{border:0;color:var(--muted);font-weight:500;border-radius:var(--r-ctl);padding:12px 14px;transition:background-color 160ms ease,color 160ms ease}
 .navbtn span{opacity:.75}
 .navbtn.active{background:var(--accent-tint);color:var(--accent-strong);border:0}
 .sidetip{border:0;background:transparent;color:var(--faint);padding:0 6px;font-size:11px;line-height:1.6}
@@ -97,7 +97,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--ink);width:20px;min-he
 input[type=file]{font-size:13px;padding:8px;color:var(--muted)}
 input[type=file]::file-selector-button{font:inherit;font-weight:600;color:var(--text);background:var(--panel2);border:1px solid var(--line-strong);border-radius:9px;padding:7px 12px;margin-right:10px;cursor:pointer}
 textarea{min-height:96px;line-height:1.55}
-.sectiontitle{font-size:18px;font-weight:650;letter-spacing:-.025em;margin:2px 0 16px;color:var(--text)}
+.sectiontitle{font-size:18px;font-weight:600;letter-spacing:-.025em;margin:2px 0 16px;color:var(--text)}
 .line{background:var(--line);margin:24px 0}
 .check{background:var(--panel2);border:1px solid var(--line);border-radius:var(--r-ctl);padding:14px;align-items:flex-start;margin-top:16px;transition:border-color 160ms ease}
 .check span{color:var(--ink-2);line-height:1.55}
@@ -106,7 +106,7 @@ textarea{min-height:96px;line-height:1.55}
 
 /* Apply flow: progress + stepper */
 .applybar{margin-bottom:14px}
-.applybar b{font-size:14px;font-weight:650}
+.applybar b{font-size:14px;font-weight:600}
 .progress{background:#ece8dd;height:6px;border-radius:99px}
 .progress i{background:var(--accent);border-radius:99px;transform-origin:left center;animation:cjFill 650ms var(--ease-out) both}
 .steps{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:8px;overflow:visible;padding:0;margin-top:4px}
@@ -127,7 +127,7 @@ textarea{min-height:96px;line-height:1.55}
 .notice.red{background:var(--bad-tint);border-color:var(--bad-line);color:#7d2222}
 .notice.ok{background:var(--ok-tint);border-color:var(--ok-line);color:#14583a}
 .error{color:var(--bad);font-size:13px}
-.pill{background:var(--panel2);border:1px solid var(--line);color:var(--ink-2);font-weight:550;padding:4px 10px}
+.pill{background:var(--panel2);border:1px solid var(--line);color:var(--ink-2);font-weight:500;padding:4px 10px}
 .pill.ok{background:var(--ok-tint);color:var(--ok);border-color:var(--ok-line)}
 .pill.warn{background:var(--warn-tint);color:var(--warn);border-color:var(--accent-line)}
 .pill.bad{background:var(--bad-tint);color:var(--bad);border-color:var(--bad-line)}
@@ -151,7 +151,7 @@ textarea{min-height:96px;line-height:1.55}
 
 /* Lists, rows, data */
 .rrow,.dateblock{background:#fff;border:1px solid var(--line);border-radius:var(--r-ctl);padding:14px 16px;transition:border-color 160ms ease}
-.item-name{font-weight:650;letter-spacing:-.01em}
+.item-name{font-weight:600;letter-spacing:-.01em}
 .inforow{border-bottom:1px solid var(--line);padding:11px 0}
 .inforow span{color:var(--muted)}
 .stat{background:#fff;box-shadow:var(--shadow-sm);padding:18px 20px}
@@ -169,7 +169,7 @@ textarea{min-height:96px;line-height:1.55}
 .timeline .mile.is-now .dot,.dot.now{background:#fff;border:2px solid var(--accent);color:var(--accent-strong);box-shadow:0 0 0 4px rgba(176,122,28,.14)}
 .timeline .stem{background:var(--line)}
 .timeline .mile.is-done .stem{background:var(--ink)}
-.timeline .miletitle{color:var(--text);font-size:15px;font-weight:650;letter-spacing:-.015em}
+.timeline .miletitle{color:var(--text);font-size:15px;font-weight:600;letter-spacing:-.015em}
 .timeline .mile.is-next .miletitle{color:var(--muted)}
 .timeline .miletext{color:var(--muted);font-size:13px}
 .stepbar-track{background:#ece8dd;box-shadow:none;height:6px}
@@ -199,7 +199,7 @@ textarea{min-height:96px;line-height:1.55}
 
 /* Reviews */
 .review-card{background:#fff}
-.review-label{font-weight:650}
+.review-label{font-weight:600}
 .review-stars .star{background:#fff;border:1px solid var(--line-strong);color:#cfc9b8;text-shadow:none;transition:background-color 160ms ease,color 160ms ease,transform 160ms var(--ease-out)}
 .review-stars .star.selected{color:#c98a14;background:var(--accent-tint);border-color:var(--accent-line);text-shadow:none}
 @media(hover:hover) and (pointer:fine){.review-stars .star:hover{color:#c98a14;background:var(--accent-tint);text-shadow:none}}
@@ -234,7 +234,7 @@ a{color:var(--accent-strong)}
   /* Stepper collapses to numbered chips; only the current step shows its name */
   .steps{display:flex;gap:6px;counter-reset:st}
   .stepbtn{flex:0 0 46px;width:46px;padding:0;font-size:0;text-align:center;display:grid;place-items:center;counter-increment:st}
-  .stepbtn::before{content:counter(st);font-size:14px;font-weight:650}
+  .stepbtn::before{content:counter(st);font-size:14px;font-weight:600}
   .stepbtn.active{flex:1 1 auto;width:auto;padding:0 14px;font-size:13px;justify-items:start}
   .stepbtn.active::before{content:none}
   .card>.btnrow:last-child .btn,.card>.btnrow:last-child label{flex:1 1 100%}
@@ -242,7 +242,7 @@ a{color:var(--accent-strong)}
 
   /* Bottom bar: flat, anchored, never floats over fields */
   .bottomnav{left:0;right:0;bottom:0;border:0;border-top:1px solid var(--line);border-radius:0;background:rgba(255,253,249,.96);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 24px -18px rgba(48,36,12,.25)}
-  .bottomnav button{font-size:11px;font-weight:550;color:var(--muted);min-height:52px;border-radius:12px;border:0;background:transparent;position:relative;transition:color 160ms ease,transform 160ms var(--ease-out)}
+  .bottomnav button{font-size:11px;font-weight:500;color:var(--muted);min-height:52px;border-radius:12px;border:0;background:transparent;position:relative;transition:color 160ms ease,transform 160ms var(--ease-out)}
   .bottomnav button:active{transform:scale(.96)}
   .bottomnav button.active{color:var(--accent-strong);background:transparent}
   .bottomnav button.active::after{content:"";position:absolute;top:2px;left:50%;width:22px;height:3px;margin-left:-11px;border-radius:99px;background:var(--accent)}
@@ -261,17 +261,17 @@ a{color:var(--accent-strong)}
 .customer-landing>.btnrow{display:none}
 .customer-landing .landing-title{font-size:clamp(28px,6vw,38px);letter-spacing:-.04em;margin:18px 0 8px}
 .customer-lookup{order:1;max-width:none;margin:22px 0 0;padding:22px;background:var(--panel2);border:1px solid var(--line);border-radius:var(--r-card)}
-.customer-lookup h2{font-size:19px;font-weight:650;letter-spacing:-.025em;margin:0 0 16px}
+.customer-lookup h2{font-size:19px;font-weight:600;letter-spacing:-.025em;margin:0 0 16px}
 .customer-lookup form .btn{width:100%;min-height:52px;margin-top:6px}
 .customer-lookup .error:empty{display:none}
 .install-lead{order:2;margin:28px 0 0;padding:22px;border-radius:var(--r-card)}
-.install-lead h2{font-size:21px;letter-spacing:-.03em;font-weight:650;margin:12px 0 8px}
+.install-lead h2{font-size:21px;letter-spacing:-.03em;font-weight:600;margin:12px 0 8px}
 .install-lead p{font-size:15px;line-height:1.6;color:var(--ink-2)}
 .install-lead .hint{color:var(--muted);font-size:13px}
 .install-note{border-left:3px solid var(--accent)}
 .install-columns{margin:18px 0}
 .install-device{padding:18px;background:#fff}
-.install-device h3,.notify-guide h3{font-size:16px;font-weight:650;letter-spacing:-.02em;margin:0 0 10px}
+.install-device h3,.notify-guide h3{font-size:16px;font-weight:600;letter-spacing:-.02em;margin:0 0 10px}
 .install-device li,.notify-guide li{font-size:14px;line-height:1.6;margin:8px 0}
 .notify-guide{border-top:1px solid var(--accent-line)}
 .install-lead summary{color:var(--accent-strong)}

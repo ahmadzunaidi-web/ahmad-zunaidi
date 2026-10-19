@@ -1,6 +1,6 @@
 /* Abang Recond Customer Journey PWA V5.8 — shell cache only; backend/network responses never cached */
 const CACHE='ar-cj-v6.0.0-redesign';
-const SHELL=['./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/maskable-512.png','./icons/apple-touch-icon.png','./icons/favicon-32.png','./typography.css','./redesign.css','./translations.js','./i18n.js',...['400','500','600','700'].map(w=>'./fonts/schibsted-grotesk-'+w+'.woff2'),'./fonts/ibm-plex-mono-400.woff2'];
+const SHELL=['./','./index.html','./manifest.webmanifest','./offline.html','./icons/icon-192.png','./icons/icon-512.png','./icons/maskable-512.png','./icons/apple-touch-icon.png','./icons/favicon-32.png','./typography.css','./redesign.css','./translations.js','./i18n.js',...['400','500','600','700'].map(w=>'./fonts/geist-'+w+'.woff2'),'./fonts/geist-mono-400.woff2'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('ar-cj-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim()))});
 self.addEventListener('fetch',event=>{
