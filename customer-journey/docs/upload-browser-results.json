@@ -1,0 +1,10 @@
+{
+  "results": [
+    "PASS 320px: 13MB PDF, visible progress, interrupted transfer resumed, saved status, no overflow",
+    "PASS 390px: 13MB PDF, visible progress, interrupted transfer resumed, saved status, no overflow",
+    "PASS 768px: 13MB PDF, visible progress, interrupted transfer resumed, saved status, no overflow",
+    "PASS 1280px: 13MB PDF, visible progress, interrupted transfer resumed, saved status, no overflow"
+  ],
+  "errors": [],
+  "method": "Chromium, mocked API/storage; no physical iOS/Android or live upload verified"
+}

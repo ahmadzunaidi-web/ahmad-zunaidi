@@ -1,0 +1,31 @@
+@font-face{font-family:'Schibsted Grotesk';font-style:normal;font-weight:400;font-display:swap;src:url('./fonts/schibsted-grotesk-400.woff2') format('woff2')}
+@font-face{font-family:'Schibsted Grotesk';font-style:normal;font-weight:500;font-display:swap;src:url('./fonts/schibsted-grotesk-500.woff2') format('woff2')}
+@font-face{font-family:'Schibsted Grotesk';font-style:normal;font-weight:600;font-display:swap;src:url('./fonts/schibsted-grotesk-600.woff2') format('woff2')}
+@font-face{font-family:'Schibsted Grotesk';font-style:normal;font-weight:700;font-display:swap;src:url('./fonts/schibsted-grotesk-700.woff2') format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-style:normal;font-weight:400;font-display:swap;src:url('./fonts/ibm-plex-mono-400.woff2') format('woff2')}
+body{font-family:'Schibsted Grotesk',system-ui,sans-serif!important;font-size:15px;line-height:1.55}
+button,input,select,textarea{font-family:'Schibsted Grotesk',system-ui,sans-serif!important}
+h1,h2,h3,h4,.h1,.car{font-family:'Schibsted Grotesk',system-ui,sans-serif;letter-spacing:-.035em;font-weight:700}
+.h1{font-size:clamp(28px,4vw,38px);line-height:1.13}.sub{font-size:15px;line-height:1.65}.brand{letter-spacing:-.035em;font-weight:700}
+.eyebrow,.tag,.brand-sub,.review-kicker,.pwa-chip{font-family:'IBM Plex Mono',ui-monospace,monospace!important;font-weight:400;letter-spacing:.10em}
+input,select,textarea{font-size:16px!important}label{line-height:1.5}.btn{white-space:normal;line-height:1.4;min-height:44px;font-weight:600}
+.language-toolbar{position:relative;z-index:40;display:flex;align-items:center;justify-content:flex-end;gap:12px;padding:12px 24px;min-height:60px;color:var(--text,#17191d)}
+.language-toolbar>span{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.language-choices{display:flex;border:1px solid rgba(148,163,184,.45);border-radius:999px;padding:3px;background:rgba(148,163,184,.12);gap:3px}
+.language-choices button{appearance:none;border:0;background:transparent;color:inherit;min-height:38px;min-width:48px;padding:7px 13px;border-radius:999px;font-size:13px;cursor:pointer}
+.language-choices button[aria-pressed=true]{background:#edd19c;color:#101820;font-weight:700}
+.language-choices button:focus-visible{outline:3px solid #58adc6;outline-offset:2px}
+@media(max-width:600px){.language-toolbar{padding:10px 15px}.small{line-height:1.55}.h1{font-size:30px}}
+@media print{.language-toolbar{display:none!important}}
+
+/* V5.3.1: allow actual content to wrap; do not hide horizontal overflow. */
+.main,.card,.hero,.rrow>*,.top>*,.flex>*,.milebody,.review-entry{min-width:0}
+.item-name,.item-meta,.h1,[data-user-content],.notice,.hint,.car,.sub{overflow-wrap:anywhere}
+.rrow,.cardhead,.top,.flex.space{flex-wrap:wrap}
+.language-toolbar{padding-top:calc(12px + env(safe-area-inset-top,0px));padding-right:calc(24px + env(safe-area-inset-right,0px));padding-left:calc(24px + env(safe-area-inset-left,0px))}
+button,.tab,.stepbtn,.navbtn,.language-choices button{min-height:44px}
+:focus-visible{outline:2px solid var(--gold,#d5ae63);outline-offset:3px}
+@media(max-width:720px){.main{padding-left:max(13px,env(safe-area-inset-left,0px));padding-right:max(13px,env(safe-area-inset-right,0px))}.top-actions{justify-content:flex-start}.review-actions{display:flex;flex-wrap:wrap}.modal{max-height:calc(100dvh - 30px);overflow:auto}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+button.btn.sm{min-height:44px}

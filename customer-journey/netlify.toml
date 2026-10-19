@@ -1,0 +1,39 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow, noarchive"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    X-Frame-Options = "DENY"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'sha256-HCaZ2iXBfL+quoPFWhF+8R3m0/LA8nP7IDDgsW4QNSs=' 'sha256-Diw0W7SdBxQNsKngsGt9e9ZXZ5hlm4zo3OcpfrqpTWA=' 'sha256-D5pcrQeUHwgmWGyU4InYm5GMRuXBfPLVo8b2ZuO8aU8=' 'sha256-N398NSNnd9ME1+LNg9VueXRzwu7OAVZyfxVVAqguV7I=' 'sha256-2hN0mPxP6nKhBTL+cHclHqwFrPNHYaT47p70B3OWE3A='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://ldrvvpmxnhapsupdgjee.supabase.co; font-src 'self' data:; connect-src 'self' https://ldrvvpmxnhapsupdgjee.storage.supabase.co; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+[[headers]]
+  for = "/journey/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+[[headers]]
+  for = "/vso/*"
+  [headers.values]
+    Cache-Control = "no-store"
+[[headers]]
+  for = "/journey/vso/*"
+  [headers.values]
+    Cache-Control = "no-store"
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json; charset=utf-8"
+[[headers]]
+  for = "/journey/manifest.webmanifest"
+  [headers.values]
+    Content-Type = "application/manifest+json; charset=utf-8"

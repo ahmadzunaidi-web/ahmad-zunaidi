@@ -1,0 +1,41 @@
+{
+  "id": "./?app=mycarjourney",
+  "name": "My Car Journey | Abang Recond",
+  "short_name": "My Car Journey",
+  "description": "Semak perjalanan pembiayaan kereta, pemasangan PWA dan review selepas delivery — Abang Recond.",
+  "lang": "ms-MY",
+  "dir": "ltr",
+  "start_url": "./#tracker",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": [
+    "standalone"
+  ],
+  "background_color": "#0c1322",
+  "theme_color": "#11192a",
+  "orientation": "any",
+  "categories": [
+    "business",
+    "utilities"
+  ],
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
