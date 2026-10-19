@@ -4,7 +4,7 @@ Dokumen ini menerangkan cara **membina semula** sistem chatbot WhatsApp + AI Age
 zip ini. Ia dibina secara *clean-room*: spesifikasi diambil daripada dokumentasi awam respond.io (help center,
 SDK/MCP/n8n rasmi) dan dibina semula sebagai kod sendiri. Tiada kod atau prompt proprietari disalin.
 
-> **Jujur dahulu:** kod diuji dengan 120 ujian automatik (WhatsApp & Claude dipalsukan/berskrip) dan ujian pelayar
+> **Jujur dahulu:** kod diuji dengan 138 ujian automatik (WhatsApp & Claude dipalsukan/berskrip) dan ujian pelayar
 > (Chromium). Ia **belum** dijalankan dengan nombor WhatsApp atau kunci Claude sebenar. Bahagian 7 menyenaraikan
 > perkara yang mesti disahkan sebelum guna dengan pelanggan sebenar.
 
@@ -27,7 +27,7 @@ build-zip.py                      ← menjana semula zip ini
 ```bash
 unzip wa-agent-complete.zip && cd wa-agent-complete/wa-agent     # Node >= 22.13
 npm ci
-npm test            # 120 ujian
+npm test            # 138 ujian
 npm run typecheck
 npm run dev         # http://localhost:3000  (tiada kunci pun jalan: simulator + model demo)
 ```
@@ -73,7 +73,7 @@ Meta WhatsApp Cloud API  │ Inbox · Ejen AI · Workflows (pembina) · Knowledg
 | `src/workflow/engine.ts` | interpreter workflow: trigger, 16 jenis langkah, pengesahan jawapan, timer, exit conditions |
 | `src/workflow/validate.ts` · `conditions.ts` · `template.ts` | validator graf, penilai syarat, `{{$contact.x}}` |
 | `src/media/media.ts` | muat turun media 2 langkah, semakan magic bytes, simpanan hash tersendiri, transkripsi (pilihan), tempoh simpan |
-| `src/knowledge/*` | chunking, crawler, **SSRF-safe fetch** (`safeRequest` dikongsi dengan HTTP skill) |
+| `src/knowledge/*` | chunking, crawler, **SSRF-safe fetch** (`safeRequest` dikongsi dengan HTTP skill); `embed.ts` (klien embedding serasi OpenAI), `vector.ts` (indeks kosinus dalam memori + gabungan RRF) |
 | `src/store.ts` · `db.ts` | semua SQL; skema SQLite |
 | `src/server.ts` | semua laluan HTTP, auth admin, SSE, webhook masuk workflow |
 
@@ -93,6 +93,7 @@ urutan ini, dan jangan lompat fasa (setiap fasa bergantung pada yang sebelumnya)
 | 7 | Review prompt, pembina workflow (UI), metrik | §1A-F2, review | `test/m7-review.test.ts` + `scripts/ui-smoke.mjs` |
 | 8 | HTTP skill, trigger-workflow, follow-up, lampiran, template/interaktif, had kadar, recover | §1A-D,G,H | `test/m8-ops.test.ts` |
 | 9 | media masuk: muat turun, validasi, imej/PDF → Claude, transkripsi suara, retensi | §1A-C (mesej yang AI baca), §H | `test/m9-media.test.ts` |
+| 10 | carian knowledge hibrid: embedding (pilihan), BM25 + kosinus digabung RRF, jatuh balik ke kata kunci, migrasi DB | §1A-E | `test/m10-embeddings.test.ts` |
 
 ### Prompt untuk ejen pengekodan (cth. Claude Code)
 
@@ -152,11 +153,14 @@ Pilihan kedua: **ubah suai** kod sedia ada — hampir semua tingkah laku tertump
 5. **Privasi media:** `TRANSCRIBE_URL` menghantar audio kepada penyedia pihak ketiga yang anda pilih (mati secara lalai; pilih yang sesuai dengan
    dasar privasi anda atau hos Whisper sendiri). Fail & transkrip dipadam selepas `MEDIA_RETENTION_DAYS` (lalai 30). Sahkan muat turun media dengan
    nombor sebenar (URL Meta tamat dalam ~5 minit).
-6. **Had diketahui:** video, pelekat dan dokumen bukan-PDF tidak dimuat turun; tiada panggilan suara, Google Sheets/CAPI; carian BM25 bukan
-   embedding; tiada penghuraian DOCX; satu workspace; satu `ADMIN_TOKEN`.
+6. **Privasi embedding:** `EMBED_URL` menghantar teks setiap bahagian knowledge DAN soalan pelanggan kepada penyedia embedding pilihan anda (mati secara lalai;
+   Anthropic tiada API embedding, gunakan OpenAI/Voyage/Ollama dsb.). Jika penyedia gagal, carian jatuh balik ke kata kunci — balasan tidak terhenti.
+   Vektor disimpan per model; tukar `EMBED_MODEL` dan jalankan **Indeks semula**. Carian vektor ialah brute-force dalam memori (sesuai sehingga ~100 ribu bahagian);
+   tetapkan `EMBED_MIN_SCORE` untuk menapis padanan lemah (bergantung pada model). Hanya diuji dengan penyedia palsu, belum dengan API sebenar.
+7. **Had diketahui:** video, pelekat dan dokumen bukan-PDF tidak dimuat turun; tiada panggilan suara, Google Sheets/CAPI; tiada penghuraian DOCX; satu workspace; satu `ADMIN_TOKEN`.
 
 ## 8. Peta jalan cadangan
 
-Video/dokumen lain & OCR · embedding/hybrid search · multi-pengguna & peranan · multi-workspace ·
+Video/dokumen lain & OCR · indeks vektor ANN untuk korpus besar · multi-pengguna & peranan · multi-workspace ·
 barisan kerja (BullMQ) + banyak instans · template disegerak daripada Graph API · kanvas workflow seret-lepas ·
 log event webhook & ujian beban.

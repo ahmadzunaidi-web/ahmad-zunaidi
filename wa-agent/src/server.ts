@@ -139,6 +139,7 @@ export function buildApp(d: AppDeps): { app: FastifyInstance; drain: () => Promi
     echoFallback: cfg.echoFallback,
     devSimulator: cfg.devSimulator,
     instructionsLimit: INSTRUCTIONS_LIMIT,
+    embedding: { configured: !!knowledge.embedder, model: knowledge.embeddingModel },
     defaultAgentId: store.getSetting('default_agent_id'),
   }));
 
@@ -377,7 +378,7 @@ export function buildApp(d: AppDeps): { app: FastifyInstance; drain: () => Promi
     const { env, effects } = simEnv({
       workspace, state, selfName: a.name, selfId: a.id,
       agents: store.activeAgents().map((x) => ({ id: x.id, name: x.name })),
-      search: (q, ids) => store.searchKnowledge(ids, q),
+      search: (q, ids) => knowledge.search(ids, q),
       knowledgeMentions: (ids, needle) => store.knowledgeMentions(ids, needle),
       workflows: store.listWorkflows().map((w) => ({ id: w.id, name: w.name, status: w.status, triggerType: w.trigger.type })),
       templates: store.listTemplates().map((t) => ({ name: t.name, language: t.language, params: t.params })),
@@ -408,14 +409,26 @@ export function buildApp(d: AppDeps): { app: FastifyInstance; drain: () => Promi
   app.delete('/api/knowledge/:id', async (req, reply) => {
     const id = Number((req.params as { id: string }).id);
     if (!store.getSource(id)) throw notFound();
-    store.deleteSource(id);
+    knowledge.remove(id);
     return reply.code(204).send();
   });
 
   app.post('/api/knowledge/search', async (req) => {
-    const b = req.body as { query?: string; source_ids?: number[] };
-    const ids = b.source_ids?.length ? b.source_ids.map(Number) : store.listSources().map((s) => s.id);
-    return { hits: store.searchKnowledge(ids, String(b.query ?? '')) };
+    const b = req.body as { query?: string; source_ids?: number[]; mode?: string };
+    const ids = b.source_ids?.length ? b.source_ids.map(Number) : store.listSources().map((x) => x.id);
+    const mode = b.mode === undefined ? undefined : (['hybrid', 'keyword', 'vector'].includes(b.mode) ? (b.mode as 'hybrid' | 'keyword' | 'vector') : null);
+    if (mode === null) throw bad('mode must be hybrid, keyword or vector');
+    try {
+      return { mode: mode ?? (knowledge.embedder ? 'hybrid' : 'keyword'), hits: await knowledge.search(ids, String(b.query ?? ''), { mode }) };
+    } catch (e) {
+      if (e instanceof KnowledgeError) throw bad(e.message);
+      throw new HttpError(502, `Embedding provider error: ${(e as Error).message}`);
+    }
+  });
+
+  /** Embed sources that have no vectors for the current model (after enabling embeddings or changing the model). */
+  app.post('/api/knowledge/reindex', async (req) => {
+    try { return { queued: knowledge.reindex(!!(req.body as { force?: boolean } | undefined)?.force) }; } catch (e) { throw bad((e as Error).message); }
   });
 
 
@@ -626,6 +639,7 @@ export function buildApp(d: AppDeps): { app: FastifyInstance; drain: () => Promi
   const drain = async () => {
     for (let i = 0; i < 200 && inflight.size; i++) await Promise.all([...inflight]);
     await pipeline.idle();
+    await knowledge.idle();
   };
   return { app, drain };
 }

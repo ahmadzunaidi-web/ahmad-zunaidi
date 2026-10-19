@@ -12,6 +12,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { openDb } from '../src/db.js';
 import { Knowledge } from '../src/knowledge/ingest.js';
+import type { Embedder } from '../src/knowledge/embed.js';
 import { buildApp } from '../src/server.js';
 import { Store } from '../src/store.js';
 import { loadWorkspace } from '../src/workspace.js';
@@ -32,7 +33,7 @@ export class CaptureSender implements Sender {
 
 export const SECRET = 'app-secret';
 
-export function setup(over: Partial<Config> = {}, fetchImpl?: typeof fetch) {
+export function setup(over: Partial<Config> = {}, fetchImpl?: typeof fetch, embedder?: Embedder) {
   const cfg: Config = { ...loadConfig({}), mediaDir: mkdtempSync(join(tmpdir(), 'wa-media-')), waAppSecret: SECRET, waVerifyToken: 'verify-me', echoFallback: true, devSimulator: true, adminToken: '', ...over };
   const store = new Store(openDb(':memory:'));
   const hub = new EventHub();
@@ -41,11 +42,12 @@ export function setup(over: Partial<Config> = {}, fetchImpl?: typeof fetch) {
   const provider = new ScriptedProvider(steps);
   const workspace = loadWorkspace('config/workspace.json');
   const pipeline = new Pipeline({ store, sender, hub, cfg, workspace, provider, fetchImpl });
-  const knowledge = new Knowledge(store, fetchImpl);
+  const knowledge = new Knowledge(store, fetchImpl, embedder, { minScore: cfg.embedMinScore });
   const engine = new WorkflowEngine(pipeline);
   const followups = new FollowUps(pipeline);
   const media = new MediaService({ store, cfg, fetchImpl });
   pipeline.media = media;
+  pipeline.knowledge = knowledge;
   const { app, drain } = buildApp({ cfg, store, pipeline, hub, workspace, knowledge, engine, media, provider, fetchImpl });
   return { cfg, store, hub, sender, steps, provider, workspace, pipeline, knowledge, engine, followups, media, app, drain };
 }

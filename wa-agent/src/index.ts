@@ -8,6 +8,7 @@ import { Pipeline } from './core/pipeline.js';
 import { MediaService } from './media/media.js';
 import { WorkflowEngine } from './workflow/engine.js';
 import { openDb } from './db.js';
+import { Embedder } from './knowledge/embed.js';
 import { Knowledge } from './knowledge/ingest.js';
 import { buildApp } from './server.js';
 import { Store } from './store.js';
@@ -30,11 +31,13 @@ const provider = cfg.anthropicKey || process.env.ANTHROPIC_AUTH_TOKEN
 
 const log = (msg: string, extra?: unknown) => console.log(`[wa-agent] ${msg}`, extra ?? '');
 const pipeline = new Pipeline({ store, sender, hub, cfg, workspace, provider, log });
-const knowledge = new Knowledge(store);
+const embedder = cfg.embedUrl ? new Embedder(cfg) : undefined;
+const knowledge = new Knowledge(store, undefined, embedder, { minScore: cfg.embedMinScore, log });
 const engine = new WorkflowEngine(pipeline);
 const followups = new FollowUps(pipeline);
 const media = new MediaService({ store, cfg, log });
 pipeline.media = media;
+pipeline.knowledge = knowledge;
 const { app } = buildApp({ cfg, store, pipeline, hub, workspace, knowledge, engine, media, provider });
 
 if (!waReady) log('WhatsApp credentials missing: outbound messages are logged (dry-run). Set WA_ACCESS_TOKEN and WA_PHONE_NUMBER_ID.');
@@ -54,6 +57,11 @@ timers.push(setInterval(() => { try { media.cleanup(); } catch (e) { log('media 
 const expired = media.cleanup();
 if (expired) log(`deleted ${expired} expired media file(s) (retention ${cfg.mediaRetentionDays} days)`);
 if (cfg.transcribeUrl) log(`voice notes are sent to ${new URL(cfg.transcribeUrl).host} for transcription`);
+if (embedder) {
+  log(`knowledge search: hybrid (BM25 + embeddings, model ${embedder.model}); chunks and queries are sent to ${new URL(cfg.embedUrl).host}`);
+  const queued = knowledge.reindex();
+  if (queued) log(`embedding ${queued} knowledge source(s) in the background`);
+}
 const recovered = pipeline.recover();
 if (recovered) log(`recovered ${recovered} conversation(s) that were waiting for an AI reply`);
 

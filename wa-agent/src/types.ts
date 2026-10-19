@@ -121,13 +121,21 @@ export interface KnowledgeSource {
   error: string | null;
   chars: number;
   chunks: number;
+  embed_status: 'none' | 'pending' | 'done' | 'failed';
+  embed_model: string | null;
+  embed_error: string | null;
   created_at: number;
 }
 
 export interface KnowledgeHit {
+  chunk_id?: number;
   source_id: number;
   source: string;
   text: string;
+  /** Cosine similarity (vector search) when the chunk was found by meaning. */
+  vector_score?: number;
+  /** How it was found. */
+  via?: ('keyword' | 'vector')[];
 }
 
 export const INSTRUCTIONS_LIMIT = 10_000;

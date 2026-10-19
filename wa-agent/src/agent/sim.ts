@@ -66,7 +66,7 @@ export class SimEffects implements Effects {
 
 export function simEnv(o: {
   workspace: Workspace; state: ConvState; selfName: string; selfId?: number; agents: { id: number; name: string }[];
-  search: (q: string, ids: number[]) => KnowledgeHit[];
+  search: (q: string, ids: number[]) => KnowledgeHit[] | Promise<KnowledgeHit[]>;
   knowledgeMentions?: (ids: number[], needle: string) => boolean;
   workflows?: AgentEnv['workflows']; templates?: AgentEnv['templates']; fetch?: typeof fetch;
 }): { env: AgentEnv; effects: SimEffects } {

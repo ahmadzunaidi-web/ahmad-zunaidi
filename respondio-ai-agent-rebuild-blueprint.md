@@ -337,6 +337,7 @@ Jangan reka harga/diskaun. Jangan janji tarikh penghantaran. Isu aduan → assig
 | 7 | Builder UI (prompt editor, workflow canvas, simulator) | Pengguna bukan-coder boleh konfigurasi | 5–8 hari | ✅ |
 | 8 | HTTP skill, template & 24h window, metrik | Siap produksi | 3–4 hari | ✅ |
 | 9 | Media masuk: muat turun + validasi, imej/PDF → Claude, transkripsi suara, retensi | AI "nampak" lampiran pelanggan | 2–3 hari | ✅ |
+| 10 | Carian knowledge hibrid: embedding pilihan + BM25, gabungan RRF, jatuh balik kata kunci | AI jumpa jawapan walau tiada kata kunci sama | 1–2 hari | ✅ |
 
 Semua 9 milestone siap dalam [`wa-agent/`](wa-agent/README.md) (120 ujian lulus + ujian pelayar; belum diuji dengan WhatsApp/Claude sebenar — lihat "Known limits" dalam README). Panduan rebuild: [`docs/REBUILD-GUIDE.md`](docs/REBUILD-GUIDE.md). Raikan setiap tanda ✔ (log kemajuan dalam file ini).
 

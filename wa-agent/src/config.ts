@@ -28,6 +28,21 @@ export interface Config {
   transcribeUrl: string;
   transcribeKey: string;
   transcribeModel: string;
+  /** Optional embeddings for knowledge search (OpenAI-compatible /embeddings). Chunks and queries are sent to this provider. */
+  embedUrl: string;
+  embedKey: string;
+  embedModel: string;
+  /** Request `dimensions` (matryoshka models) - 0 = provider default. */
+  embedDims: number;
+  /** Send Voyage-style `input_type` (document/query). */
+  embedInputType: boolean;
+  /** Prefixes some models need (e5: "passage: " / "query: "). */
+  embedDocPrefix: string;
+  embedQueryPrefix: string;
+  /** Drop vector hits below this cosine similarity (model dependent; 0 = off). */
+  embedMinScore: number;
+  /** Query-time budget; on timeout/failure search falls back to keywords. */
+  embedQueryTimeoutMs: number;
 }
 
 const bool = (v: string | undefined, d: boolean) => (v === undefined || v === '' ? d : /^(1|true|yes)$/i.test(v));
@@ -57,5 +72,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     transcribeUrl: env.TRANSCRIBE_URL ?? '',
     transcribeKey: env.TRANSCRIBE_API_KEY ?? '',
     transcribeModel: env.TRANSCRIBE_MODEL ?? 'whisper-1',
+    embedUrl: env.EMBED_URL ?? '',
+    embedKey: env.EMBED_API_KEY ?? '',
+    embedModel: env.EMBED_MODEL ?? 'text-embedding-3-small',
+    embedDims: Number(env.EMBED_DIMENSIONS ?? 0),
+    embedInputType: bool(env.EMBED_INPUT_TYPE, false),
+    embedDocPrefix: env.EMBED_DOC_PREFIX ?? '',
+    embedQueryPrefix: env.EMBED_QUERY_PREFIX ?? '',
+    embedMinScore: Number(env.EMBED_MIN_SCORE ?? 0),
+    embedQueryTimeoutMs: Number(env.EMBED_QUERY_TIMEOUT_MS ?? 5000),
   };
 }

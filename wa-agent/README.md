@@ -15,6 +15,7 @@ rebuild instructions: `../docs/REBUILD-GUIDE.md`.
 | 7 | Prompt **Review** linter with "Apply fix", visual workflow builder, metrics dashboard | ✅ tested (+ browser smoke test) |
 | 8 | HTTP skill, Trigger-Workflow skill, persistent follow-ups, attachments, WhatsApp templates + buttons/lists, AI rate limit, restart recovery | ✅ tested |
 | 9 | **Inbound media**: authenticated download, magic-byte validation, private hash-named storage, images/PDFs shown to Claude, opt-in voice-note transcription, retention | ✅ tested (+ browser smoke test) |
+| 10 | **Hybrid knowledge search**: opt-in embeddings (OpenAI-compatible), BM25 + cosine fused by RRF, keyword fallback if the provider fails, per-source index status, DB migration | ✅ tested (+ browser check) |
 
 ## Run it
 
@@ -22,7 +23,7 @@ rebuild instructions: `../docs/REBUILD-GUIDE.md`.
 npm ci
 cp .env.example .env        # optional; the app also runs with no env at all
 npm run dev                 # http://localhost:3000
-npm test                    # 120 tests
+npm test                    # 138 tests
 npm run typecheck
 ```
 
@@ -45,6 +46,7 @@ The AI may only use these **exact** names; anything else makes the skill fail an
 | `AI_MAX_RUNS_PER_HOUR` | Circuit breaker per conversation (default 40) |
 | `MEDIA_DIR`, `MEDIA_MAX_MB`, `MEDIA_RETENTION_DAYS` | Where inbound media is stored (default `data/media`), size cap (16), days to keep (30; 0 = forever) |
 | `TRANSCRIBE_URL`, `TRANSCRIBE_API_KEY`, `TRANSCRIBE_MODEL` | **Opt-in** speech-to-text (OpenAI-compatible `/audio/transcriptions`, e.g. a self-hosted Whisper). Unset → voice notes stay `[Audio message]` |
+| `EMBED_URL`, `EMBED_API_KEY`, `EMBED_MODEL` (default `text-embedding-3-small`) | **Opt-in** semantic search (OpenAI-compatible `/embeddings`; Anthropic has none). Optional: `EMBED_DIMENSIONS`, `EMBED_INPUT_TYPE`, `EMBED_DOC_PREFIX`, `EMBED_QUERY_PREFIX`, `EMBED_MIN_SCORE`, `EMBED_QUERY_TIMEOUT_MS` (5000). Unset → BM25 only |
 | `ECHO_FALLBACK`, `DEV_SIMULATOR` | Echo bot / customer simulator (default on outside production) |
 | `PORT`, `DB_PATH`, `WORKSPACE_CONFIG`, `AGENT_MODEL` | Port, SQLite file, workspace JSON, default model |
 
@@ -78,7 +80,7 @@ Texts use `{{$contact.firstname}}`, `{{$var.topic}}`, `{{$trigger.order.id}}`.
 
 Conversations `GET/POST /conversations[/:id[/messages|takeover|assign|status|comments|template|shortcut]]` ·
 Contacts `PUT /contacts/:id` · Agents `GET/POST/PUT /agents[/:id]`, `…/publish|unpublish|test|review|tools|runs` ·
-Media `GET /media/:id`, Knowledge `GET/POST/DELETE /knowledge`, `POST /knowledge/search` · Workflows `GET/POST/PUT/DELETE /workflows[/:id]`,
+Media `GET /media/:id`, Knowledge `GET/POST/DELETE /knowledge`, `POST /knowledge/search {query, mode: hybrid|keyword|vector}`, `POST /knowledge/reindex` · Workflows `GET/POST/PUT/DELETE /workflows[/:id]`,
 `…/validate|publish|stop|clone|test|runs` · Templates `GET/POST/DELETE /templates` · `GET /metrics?days=` ·
 `GET /config`, `PUT /settings/default-agent`, `GET /events` (SSE), `POST /dev/simulate`.
 
@@ -88,7 +90,7 @@ Media `GET /media/:id`, Knowledge `GET/POST/DELETE /knowledge`, `POST /knowledge
   Cloud API sender and `ClaudeProvider` request shapes are unit-tested but have not run with real credentials.
 * Inbound **video, stickers and non-PDF documents** are not downloaded (placeholders only); no OCR beyond what Claude does on images/PDFs; transcription needs an external provider you choose.
 * No voice calls, Google Sheets/Conversions-API steps, or "only assign to online users" (no presence).
-* Retrieval is keyword/BM25, not embeddings; no PDF/DOCX parsing (text, markdown, CSV, HTML only).
+* Retrieval is BM25 by default; with `EMBED_URL` it is hybrid (BM25 + vectors). Vectors are brute-force in memory (fine up to ~100k chunks). **Privacy:** chunk text and customer queries go to the embedding provider you configure. Tested only against a fake provider. No PDF/DOCX parsing (text, markdown, CSV, HTML only).
 * Single workspace, single `ADMIN_TOKEN`, single instance (debounce timers are in-process; follow-ups, workflow timers
   and `recover()` are persisted).
 * `node:sqlite` is experimental in Node 22 (prints a warning); requires Node ≥ 22.13.

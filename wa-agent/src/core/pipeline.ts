@@ -9,6 +9,7 @@ import type { Conversation, Message, MessageSender } from '../types.js';
 import { teamOf, type Workspace } from '../workspace.js';
 import type { WorkflowEngine } from '../workflow/engine.js';
 import type { EventSource, WorkflowEvent } from '../workflow/types.js';
+import type { Knowledge } from '../knowledge/ingest.js';
 import type { MediaService } from '../media/media.js';
 import type { FollowUps } from './followups.js';
 import type { EventHub } from './events.js';
@@ -38,6 +39,7 @@ export class Pipeline {
   engine?: WorkflowEngine;
   followups?: FollowUps;
   media?: MediaService;
+  knowledge?: Knowledge;
   private pending = new Map<number, Pending>();
   private chains = new Map<number, Promise<void>>();
   private running = 0;
@@ -344,7 +346,7 @@ export class Pipeline {
     const env: AgentEnv = {
       workspace, state, effects, selfName, selfId,
       agents: store.activeAgents().map((a) => ({ id: a.id, name: a.name })),
-      searchKnowledge: (q, ids) => store.searchKnowledge(ids, q),
+      searchKnowledge: (q, ids) => (this.knowledge ? this.knowledge.search(ids, q) : store.searchKnowledge(ids, q)),
       knowledgeMentions: (ids, needle) => store.knowledgeMentions(ids, needle),
       workflows: store.listWorkflows().map((w) => ({ id: w.id, name: w.name, status: w.status, triggerType: w.trigger.type })),
       templates: store.listTemplates().map((t) => ({ name: t.name, language: t.language, params: t.params })),

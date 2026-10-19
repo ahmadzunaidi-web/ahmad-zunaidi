@@ -133,11 +133,12 @@ code{background:var(--echo);padding:1px 5px;border-radius:5px}
       <div class="row"><input id="k-url" placeholder="https://contoh.com/bantuan"><select id="k-depth" style="width:110px"><option value="0">Satu laman</option><option value="1" selected>Kedalaman 1</option><option value="2">Kedalaman 2</option><option value="3">Kedalaman 3</option></select></div>
       <div style="margin-top:6px"><button class="primary" id="k-add-url">Tambah URL</button> <small>Hanya URL awam; alamat dalaman disekat.</small></div>
       <hr style="border:none;border-top:1px solid var(--line);margin:16px 0">
-      <label>Uji carian (kata kunci dalam kandungan)</label>
-      <div class="row"><input id="k-q" placeholder="cth. harga pakej premium"><button id="k-search">Cari</button></div>
+      <label>Uji carian</label>
+      <div class="row"><input id="k-q" placeholder="cth. harga pakej premium"><select id="k-mode" style="width:120px"><option value="hybrid">Hibrid</option><option value="keyword">Kata kunci</option><option value="vector">Makna (vektor)</option></select><button id="k-search">Cari</button></div>
+      <small id="k-mode-note"></small>
       <div id="k-hits"></div>
     </div>
-    <div class="col pad"><h3 style="margin-top:0">Sumber</h3><div id="k-list"></div><hr style="border:none;border-top:1px solid var(--line);margin:18px 0"><h3>Template WhatsApp</h3><small>Daftarkan template yang sudah diluluskan Meta. Template sahaja boleh dihantar selepas 24 jam.</small><div class="row" style="margin-top:8px"><input id="t-name" placeholder="nama_template"><input id="t-lang" placeholder="ms" style="width:70px" value="ms"></div><textarea id="t-body" rows="3" placeholder="Hai {{1}}, masih berminat dengan {{2}}?" style="margin-top:6px"></textarea><button class="primary" id="t-add" style="margin-top:6px">Daftar template</button><div id="t-list" style="margin-top:8px"></div></div>
+    <div class="col pad"><div class="row sp"><h3 style="margin:0">Sumber</h3><button id="k-reindex" hidden title="Kira semula vektor untuk sumber yang belum siap">Indeks semula</button></div><div id="k-list"></div><hr style="border:none;border-top:1px solid var(--line);margin:18px 0"><h3>Template WhatsApp</h3><small>Daftarkan template yang sudah diluluskan Meta. Template sahaja boleh dihantar selepas 24 jam.</small><div class="row" style="margin-top:8px"><input id="t-name" placeholder="nama_template"><input id="t-lang" placeholder="ms" style="width:70px" value="ms"></div><textarea id="t-body" rows="3" placeholder="Hai {{1}}, masih berminat dengan {{2}}?" style="margin-top:6px"></textarea><button class="primary" id="t-add" style="margin-top:6px">Daftar template</button><div id="t-list" style="margin-top:8px"></div></div>
   </section>
 
   <section class="view" id="v-workflows">
@@ -200,6 +201,7 @@ function renderChips() {
   $('#chips').innerHTML = [
     `<span class="chip ${c.llm === 'claude' ? 'ok' : 'warn'}" title="Penyedia LLM">${c.llm === 'claude' ? '🧠 Claude' : '🧪 LLM demo (tiada API key)'}</span>`,
     `<span class="chip ${c.whatsappConfigured ? 'ok' : 'warn'}">${c.whatsappConfigured ? '📱 WhatsApp aktif' : '📱 WhatsApp dry-run'}</span>`,
+    `<span class="chip ${c.embedding?.configured ? 'ok' : 'warn'}" title="Carian knowledge">${c.embedding?.configured ? '🔎 Hibrid · ' + esc(c.embedding.model) : '🔎 Carian kata kunci (tiada embedding)'}</span>`,
   ].join('');
   $('#sim').hidden = !c.devSimulator;
 }
@@ -419,15 +421,30 @@ function renderTestPanel() {
 async function loadKnowledge() {
   state.sources = await api('GET', '/api/knowledge'); loadTemplates();
   $('#k-list').innerHTML = state.sources.length ? state.sources.map((s) => `<div class="item" style="cursor:default"><div class="row sp"><b>${s.type === 'url' ? '🌐' : '📄'} ${esc(s.name)}</b><span class="badge ${s.status === 'completed' ? 'b-live' : 'b-err'}">${s.status === 'completed' ? 'Siap' : 'Ralat'}</span></div>
-    <small>${s.chunks} bahagian · ${(s.chars / 1000).toFixed(1)}k aksara${s.uri ? ' · ' + esc(s.uri) : ''}</small>${s.error ? `<div style="color:var(--bad);font-size:12px">${esc(s.error)}</div>` : ''}
+    ${embBadge(s)}<small>${s.chunks} bahagian · ${(s.chars / 1000).toFixed(1)}k aksara${s.uri ? ' · ' + esc(s.uri) : ''}</small>${s.error ? `<div style="color:var(--bad);font-size:12px">${esc(s.error)}</div>` : ''}
     <div><button class="danger" data-del="${s.id}" style="margin-top:4px">Padam</button></div></div>`).join('') : '<div class="empty">Belum ada sumber. Tambah teks atau URL di kiri.</div>';
+  const emb = state.cfg?.embedding?.configured;
+  $('#k-mode').querySelectorAll('option').forEach((o) => { if (o.value !== 'keyword') o.disabled = !emb; });
+  if (!emb) $('#k-mode').value = 'keyword';
+  $('#k-mode-note').textContent = emb ? '' : 'Carian makna belum aktif — tetapkan EMBED_URL (lihat README).';
+  $('#k-reindex').hidden = !emb;
+  clearTimeout(embTimer);
+  if (state.sources.some((s) => s.embed_status === 'pending')) embTimer = setTimeout(() => $('#v-knowledge').classList.contains('on') && loadKnowledge(), 2000);
+}
+let embTimer;
+function embBadge(s) {
+  if (!state.cfg?.embedding?.configured || s.status !== 'completed') return '';
+  const m = { done: ['b-live', '🔎 Vektor siap'], pending: ['', '⏳ Mengindeks…'], failed: ['b-err', '⚠ Vektor gagal'], none: ['', 'Belum diindeks'] }[s.embed_status] || ['', s.embed_status];
+  return `<span class="badge ${m[0]}" title="${esc(s.embed_error || s.embed_model || '')}">${m[1]}</span> `;
 }
 $('#k-list').onclick = (e) => { const id = e.target.dataset.del; if (id && confirm('Padam sumber ini?')) act(async () => { await api('DELETE', '/api/knowledge/' + id); loadKnowledge(); }, 'Dipadam'); };
 $('#k-file').onchange = async (e) => { const f = e.target.files[0]; if (!f) return; if (f.size > 2_000_000) return toast('⚠ Fail terlalu besar (maks 2MB)'); $('#k-text').value = await f.text(); if (!$('#k-name').value) $('#k-name').value = f.name; };
 $('#k-add-text').onclick = () => act(async () => { await api('POST', '/api/knowledge', { name: $('#k-name').value, text: $('#k-text').value }); $('#k-text').value = ''; $('#k-name').value = ''; loadKnowledge(); }, 'Sumber ditambah — AI boleh guna selepas anda pilih di editor ejen ✓');
 $('#k-add-url').onclick = () => { $('#k-add-url').disabled = true; act(async () => { await api('POST', '/api/knowledge', { name: $('#k-name').value, url: $('#k-url').value, depth: Number($('#k-depth').value) }); $('#k-url').value = ''; loadKnowledge(); }, 'URL diproses').finally(() => $('#k-add-url').disabled = false); };
-$('#k-search').onclick = () => act(async () => { const r = await api('POST', '/api/knowledge/search', { query: $('#k-q').value });
-  $('#k-hits').innerHTML = r.hits.length ? r.hits.map((h) => `<div class="hit"><small>${esc(h.source)}</small>\n${esc(h.text)}</div>`).join('') : '<p class="muted">Tiada padanan. Cuba kata kunci yang ada dalam kandungan (bukan tajuk dokumen).</p>'; });
+$('#k-reindex').onclick = () => act(async () => { const r = await api('POST', '/api/knowledge/reindex', {}); await loadKnowledge(); }, 'Pengindeksan dimulakan — carian kata kunci terus berfungsi ✓');
+$('#k-search').onclick = () => act(async () => { const r = await api('POST', '/api/knowledge/search', { query: $('#k-q').value, mode: $('#k-mode').value });
+  const via = (h) => (h.via || []).map((v) => v === 'vector' ? `makna${h.vector_score != null ? ' ' + h.vector_score.toFixed(2) : ''}` : 'kata kunci').join(' + ');
+  $('#k-hits').innerHTML = r.hits.length ? r.hits.map((h) => `<div class="hit"><small>${esc(h.source)}${via(h) ? ' · ' + esc(via(h)) : ''}</small>\n${esc(h.text)}</div>`).join('') : '<p class="muted">Tiada padanan. Cuba kata kunci yang ada dalam kandungan (bukan tajuk dokumen).</p>'; });
 
 // ---------- progress ----------
 const MILESTONES = [
@@ -440,6 +457,7 @@ const MILESTONES = [
   ['Builder UI + Review + metrik', 'Pembina workflow bercabang, Review prompt dengan Apply fix, panel metrik.', true],
   ['Media masuk + transkripsi suara', 'Imej/PDF disahkan (magic bytes) & dihantar kepada Claude; nota suara ditranskripsi; tempoh simpan automatik.', true],
   ['HTTP skill, template, follow-up, lampiran, pengerasan', 'SSRF-safe HTTP, Trigger Workflow, follow-up berterusan, butang/senarai interaktif, had kadar AI, pemulihan selepas restart.', true],
+  ['Carian knowledge hibrid (embedding)', 'BM25 + vektor makna digabung (RRF); pilihan, jatuh balik ke kata kunci jika penyedia gagal; status indeks per sumber.', true],
 ];
 function renderProgress() {
   const done = MILESTONES.filter((m) => m[2]).length, nextIdx = MILESTONES.findIndex((m) => !m[2]);

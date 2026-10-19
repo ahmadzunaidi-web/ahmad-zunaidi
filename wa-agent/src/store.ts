@@ -10,7 +10,7 @@ export interface MediaRow {
   id: number; message_id: number; wa_media_id: string | null; kind: string; mime: string | null; size: number | null; sha256: string | null;
   path: string | null; status: 'stored' | 'failed' | 'skipped' | 'expired'; transcript: string | null; caption: string | null; filename: string | null; error: string | null; created_at: number;
 }
-type Param = string | number | null;
+type Param = string | number | null | Uint8Array;
 type Row = Record<string, unknown>;
 
 export const SKILL_KEYS: SkillKey[] = ['assign', 'close', 'set_field', 'set_lifecycle', 'tags', 'comment', 'http', 'trigger_workflow', 'followup', 'attachment'];
@@ -264,6 +264,28 @@ export class Store {
     this.run('DELETE FROM knowledge_chunk WHERE source_id = ?', id);
     this.run('DELETE FROM knowledge_source WHERE id = ?', id);
   }
+  setEmbedStatus(sourceId: number, status: 'none' | 'pending' | 'done' | 'failed', error: string | null, model: string | null): void {
+    this.run('UPDATE knowledge_source SET embed_status = ?, embed_error = ?, embed_model = ? WHERE id = ?', status, error, model, sourceId);
+  }
+  chunksNeedingEmbedding(sourceId: number, model: string, limit: number): { id: number; text: string }[] {
+    return this.all('SELECT id, text FROM knowledge_chunk WHERE source_id = ? AND (embedding IS NULL OR embed_model IS NOT ?) ORDER BY ord LIMIT ?', sourceId, model, limit) as never;
+  }
+  setChunkEmbedding(chunkId: number, blob: Uint8Array, model: string): void {
+    this.run('UPDATE knowledge_chunk SET embedding = ?, embed_model = ? WHERE id = ?', blob, model, chunkId);
+  }
+  clearEmbeddings(sourceId?: number): void {
+    if (sourceId === undefined) this.run('UPDATE knowledge_chunk SET embedding = NULL, embed_model = NULL');
+    else this.run('UPDATE knowledge_chunk SET embedding = NULL, embed_model = NULL WHERE source_id = ?', sourceId);
+  }
+  embeddingProgress(sourceId: number, model: string): { done: number; total: number } {
+    const r = this.get('SELECT COUNT(*) AS total, SUM(embed_model = ? AND embedding IS NOT NULL) AS done FROM knowledge_chunk WHERE source_id = ?', model, sourceId)!;
+    return { done: Number(r.done ?? 0), total: Number(r.total) };
+  }
+  embeddingsFor(sourceIds: number[], model: string): { id: number; source_id: number; text: string; embedding: Uint8Array; source: string }[] {
+    if (!sourceIds.length) return [];
+    const marks = sourceIds.map(() => '?').join(',');
+    return this.all(`SELECT c.id AS id, c.source_id AS source_id, c.text AS text, c.embedding AS embedding, s.name AS source FROM knowledge_chunk c JOIN knowledge_source s ON s.id = c.source_id WHERE c.source_id IN (${marks}) AND c.embed_model = ? AND c.embedding IS NOT NULL ORDER BY c.id`, ...sourceIds, model) as never;
+  }
   /** BM25 keyword search over the chosen sources (the AI searches by content keywords, not by document title). */
   searchKnowledge(sourceIds: number[], query: string, limit = 5): KnowledgeHit[] {
     if (!sourceIds.length) return [];
@@ -272,7 +294,7 @@ export class Store {
     const match = terms.map((t) => `"${t.replace(/"/g, '')}"`).join(' OR ');
     const marks = sourceIds.map(() => '?').join(',');
     const rows = this.all(
-      `SELECT f.text AS text, f.source_id AS source_id, s.name AS source
+      `SELECT f.rowid AS chunk_id, f.text AS text, f.source_id AS source_id, s.name AS source
          FROM chunk_fts f JOIN knowledge_source s ON s.id = f.source_id
         WHERE chunk_fts MATCH ? AND f.source_id IN (${marks})
         ORDER BY bm25(chunk_fts) LIMIT ?`, match, ...sourceIds, limit);

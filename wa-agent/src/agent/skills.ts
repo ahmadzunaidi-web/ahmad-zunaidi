@@ -47,7 +47,7 @@ export interface AgentEnv {
   agents: { id: number; name: string }[];
   selfName: string;
   selfId: number;
-  searchKnowledge(query: string, sourceIds: number[]): KnowledgeHit[];
+  searchKnowledge(query: string, sourceIds: number[]): KnowledgeHit[] | Promise<KnowledgeHit[]>;
   knowledgeMentions(sourceIds: number[], needle: string): boolean;
   workflows: { id: number; name: string; status: string; triggerType: string }[];
   templates: { name: string; language: string; params: number }[];
@@ -382,7 +382,7 @@ export async function executeTool(name: string, input: Record<string, unknown>, 
     if (name === TOOL_NAMES.search && snap.knowledge_ids.length) {
       const q = str(input.query);
       if (!q) return fail('query is required');
-      const hits = env.searchKnowledge(q, snap.knowledge_ids);
+      const hits = await env.searchKnowledge(q, snap.knowledge_ids);
       if (!hits.length) return { ok: true, message: 'No matching content found in the knowledge base for these keywords. Try different keywords once; otherwise say you do not know and follow the handover rules.', hits };
       return { ok: true, message: hits.map((h, i) => `[${i + 1}] (source: ${h.source})\n${h.text}`).join('\n\n'), hits };
     }

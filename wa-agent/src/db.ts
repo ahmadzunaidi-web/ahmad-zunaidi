@@ -99,13 +99,18 @@ CREATE TABLE IF NOT EXISTS knowledge_source (
   error TEXT,
   chars INTEGER NOT NULL DEFAULT 0,
   chunks INTEGER NOT NULL DEFAULT 0,
+  embed_status TEXT NOT NULL DEFAULT 'none',
+  embed_model TEXT,
+  embed_error TEXT,
   created_at INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS knowledge_chunk (
   id INTEGER PRIMARY KEY,
   source_id INTEGER NOT NULL REFERENCES knowledge_source(id) ON DELETE CASCADE,
   ord INTEGER NOT NULL,
-  text TEXT NOT NULL
+  text TEXT NOT NULL,
+  embedding BLOB,
+  embed_model TEXT
 );
 CREATE VIRTUAL TABLE IF NOT EXISTS chunk_fts USING fts5(text, source_id UNINDEXED, tokenize='unicode61 remove_diacritics 2');
 CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
@@ -188,5 +193,17 @@ export function openDb(path: string): DatabaseSyncType {
   const db = new DatabaseSync(path);
   db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
   db.exec(SCHEMA);
+  migrate(db);
   return db;
+}
+
+/** CREATE TABLE IF NOT EXISTS never alters an existing table: add columns introduced later. */
+function ensureColumns(db: DatabaseSyncType, table: string, cols: Record<string, string>): void {
+  const have = new Set((db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map((r) => r.name));
+  for (const [name, ddl] of Object.entries(cols)) if (!have.has(name)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${ddl}`);
+}
+
+function migrate(db: DatabaseSyncType): void {
+  ensureColumns(db, 'knowledge_source', { embed_status: "TEXT NOT NULL DEFAULT 'none'", embed_model: 'TEXT', embed_error: 'TEXT' });
+  ensureColumns(db, 'knowledge_chunk', { embedding: 'BLOB', embed_model: 'TEXT' });
 }
