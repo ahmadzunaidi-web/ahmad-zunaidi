@@ -109,6 +109,61 @@ CREATE TABLE IF NOT EXISTS knowledge_chunk (
 );
 CREATE VIRTUAL TABLE IF NOT EXISTS chunk_fts USING fts5(text, source_id UNINDEXED, tokenize='unicode61 remove_diacritics 2');
 CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS workflow (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  status TEXT NOT NULL DEFAULT 'draft',
+  trigger TEXT NOT NULL,
+  graph TEXT NOT NULL,
+  settings TEXT NOT NULL DEFAULT '{}',
+  hook_token TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  published_at INTEGER
+);
+CREATE TABLE IF NOT EXISTS workflow_run (
+  id INTEGER PRIMARY KEY,
+  workflow_id INTEGER NOT NULL REFERENCES workflow(id),
+  contact_id INTEGER NOT NULL,
+  conversation_id INTEGER,
+  status TEXT NOT NULL,
+  step_id TEXT,
+  wait_kind TEXT,
+  wait_until INTEGER,
+  vars TEXT NOT NULL DEFAULT '{}',
+  trigger_vars TEXT NOT NULL DEFAULT '{}',
+  steps_run INTEGER NOT NULL DEFAULT 0,
+  is_test INTEGER NOT NULL DEFAULT 0,
+  ended_reason TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS wr_active ON workflow_run(status, wait_until);
+CREATE INDEX IF NOT EXISTS wr_contact ON workflow_run(contact_id, status);
+CREATE TABLE IF NOT EXISTS wa_template (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  language TEXT NOT NULL,
+  body TEXT NOT NULL,
+  params INTEGER NOT NULL DEFAULT 0,
+  UNIQUE (name, language)
+);
+CREATE TABLE IF NOT EXISTS followup_job (
+  id INTEGER PRIMARY KEY,
+  conversation_id INTEGER NOT NULL,
+  agent_id INTEGER NOT NULL,
+  seq INTEGER NOT NULL,
+  delay_minutes REAL NOT NULL,
+  run_at INTEGER,
+  message TEXT,
+  template TEXT,
+  params TEXT NOT NULL DEFAULT '[]',
+  actions TEXT NOT NULL DEFAULT '[]',
+  status TEXT NOT NULL DEFAULT 'queued',
+  error TEXT,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS fj_due ON followup_job(status, run_at);
 `;
 
 export function openDb(path: string): DatabaseSyncType {

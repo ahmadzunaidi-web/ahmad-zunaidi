@@ -15,6 +15,13 @@ import type { ConvState } from './agent/skills.js';
 import { emptyDraft, SKILL_KEYS, type Store } from './store.js';
 import { INSTRUCTIONS_LIMIT, type AgentDraft, type ConvEvent, type SkillKey } from './types.js';
 import type { Workspace } from './workspace.js';
+import { buildTools } from './agent/skills.js';
+import { maskActions, restoreSecrets, validateHttpActions } from './agent/http-skill.js';
+import { reviewAgent, summarize } from './agent/review.js';
+import { newHookToken, triggerVarsFromBody, type WorkflowEngine } from './workflow/engine.js';
+import { LIMITS, type Graph, type Trigger, type WorkflowSettings } from './workflow/types.js';
+import { structuralIssues, validateGraph, validateTrigger } from './workflow/validate.js';
+import { normalizeDraft } from './store.js';
 
 declare module 'fastify' {
   interface FastifyRequest { rawBody?: Buffer }
@@ -27,7 +34,10 @@ export interface AppDeps {
   hub: EventHub;
   workspace: Workspace;
   knowledge: Knowledge;
+  engine: WorkflowEngine;
   provider: LlmProvider;
+  /** Outbound HTTP for the HTTP skill/step (injectable for tests). */
+  fetchImpl?: typeof fetch;
   /** Directory holding index.html (the inbox UI). */
   publicDir?: string;
 }
@@ -46,7 +56,7 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 export function buildApp(d: AppDeps): { app: FastifyInstance; drain: () => Promise<void> } {
-  const { cfg, store, pipeline, hub, workspace, knowledge } = d;
+  const { cfg, store, pipeline, hub, workspace, knowledge, engine } = d;
   const app = Fastify({
     logger: process.env.NODE_ENV === 'test' || process.env.VITEST ? false : {
       level: 'info',
@@ -66,7 +76,8 @@ export function buildApp(d: AppDeps): { app: FastifyInstance; drain: () => Promi
   app.setErrorHandler((err: Error & { statusCode?: number }, _req, reply) => {
     const status = err instanceof HttpError ? err.status : err.statusCode && err.statusCode < 500 ? err.statusCode : 500;
     if (status >= 500) app.log.error(err);
-    reply.code(status).send({ error: status >= 500 ? 'Internal error' : err.message });
+    const issues = (err as { issues?: unknown }).issues;
+    reply.code(status).send({ error: status >= 500 ? 'Internal error' : err.message, ...(issues ? { issues } : {}) });
   });
 
   // ---- admin auth for /api/* -------------------------------------------------------------------
@@ -167,6 +178,7 @@ export function buildApp(d: AppDeps): { app: FastifyInstance; drain: () => Promi
     if (!text) throw bad('text is required');
     if (conv.handler === 'ai') throw new HttpError(409, 'An AI agent is handling this conversation. Take over first.');
     const msgs = await pipeline.send(conv.id, text, 'human');
+    await pipeline.humanActivity(conv.id, 'outgoing');
     return reply.code(msgs.some((m) => m.status === 'failed') ? 502 : 200).send({ messages: msgs });
   });
 
@@ -191,7 +203,7 @@ export function buildApp(d: AppDeps): { app: FastifyInstance; drain: () => Promi
     const b = req.body as { status?: string; closing_note?: string; summary?: string };
     if (b.status !== 'open' && b.status !== 'closed') throw bad('status must be open or closed');
     try {
-      return { conversation: pipeline.setStatus(conv.id, b.status, b.closing_note ?? null, b.summary ?? null) };
+      return { conversation: await pipeline.setStatus(conv.id, b.status, b.closing_note ?? null, b.summary ?? null) };
     } catch (e) { throw bad((e as Error).message); }
   });
 
@@ -267,20 +279,26 @@ export function buildApp(d: AppDeps): { app: FastifyInstance; drain: () => Promi
         out.skills[k] = { enabled: !!s?.enabled, prompt: String(s?.prompt ?? '').slice(0, 1000) };
       }
     }
+    if (patch.http_actions !== undefined) {
+      try { out.http_actions = validateHttpActions(restoreSecrets(patch.http_actions, base.http_actions)); } catch (e) { throw bad((e as Error).message); }
+    }
     return out;
   }
 
-  app.get('/api/agents', async () => store.listAgents());
+  /** Never send stored API keys back to the browser. */
+  const maskAgent = <T extends { draft: AgentDraft }>(a: T): T => ({ ...a, draft: { ...a.draft, http_actions: maskActions(a.draft.http_actions) } });
+
+  app.get('/api/agents', async () => store.listAgents().map(maskAgent));
 
   app.post('/api/agents', async (req) => {
     const b = req.body as { name?: string; emoji?: string; description?: string; draft?: Partial<AgentDraft> };
     const name = String(b.name ?? '').trim();
     if (!name) throw bad('name is required');
     if (store.listAgents().some((a) => a.name === name)) throw bad(`An agent named "${name}" already exists`);
-    return store.createAgent(name, b.emoji?.trim() || '🤖', b.description ?? '', mergeDraft(emptyDraft(cfg.defaultModel), b.draft));
+    return maskAgent(store.createAgent(name, b.emoji?.trim() || '🤖', b.description ?? '', mergeDraft(emptyDraft(cfg.defaultModel), b.draft)));
   });
 
-  app.get('/api/agents/:id', async (req) => agentOr404(req));
+  app.get('/api/agents/:id', async (req) => maskAgent(agentOr404(req)));
 
   app.put('/api/agents/:id', async (req) => {
     const a = agentOr404(req);
@@ -290,7 +308,7 @@ export function buildApp(d: AppDeps): { app: FastifyInstance; drain: () => Promi
       if (!name) throw bad('name cannot be empty');
       if (store.listAgents().some((x) => x.name === name && x.id !== a.id)) throw bad(`An agent named "${name}" already exists`);
     }
-    return store.updateAgent(a.id, { name: b.name?.trim(), emoji: b.emoji, description: b.description, draft: mergeDraft(a.draft, b.draft) });
+    return maskAgent(store.updateAgent(a.id, { name: b.name?.trim(), emoji: b.emoji, description: b.description, draft: mergeDraft(a.draft, b.draft) }));
   });
 
   app.post('/api/agents/:id/publish', async (req) => {
@@ -298,7 +316,7 @@ export function buildApp(d: AppDeps): { app: FastifyInstance; drain: () => Promi
     if (!a.draft.instructions.trim()) throw bad('Write instructions before publishing');
     const out = store.publishAgent(a.id);
     hub.publish({ type: 'agent', agentId: a.id });
-    return out;
+    return maskAgent(out);
   });
 
   app.post('/api/agents/:id/unpublish', async (req) => {
@@ -306,7 +324,7 @@ export function buildApp(d: AppDeps): { app: FastifyInstance; drain: () => Promi
     if (store.getSetting('default_agent_id') === a.id) store.setSetting('default_agent_id', null);
     const out = store.unpublishAgent(a.id);
     hub.publish({ type: 'agent', agentId: a.id });
-    return out;
+    return maskAgent(out);
   });
 
   app.get('/api/agents/:id/runs', async (req) => store.runs(agentOr404(req).id));
@@ -322,9 +340,13 @@ export function buildApp(d: AppDeps): { app: FastifyInstance; drain: () => Promi
       status: 'open', handler: 'ai', assignee_team: null, assignee_user: null,
     };
     const { env, effects } = simEnv({
-      workspace, state, selfName: a.name,
+      workspace, state, selfName: a.name, selfId: a.id,
       agents: store.activeAgents().map((x) => ({ id: x.id, name: x.name })),
       search: (q, ids) => store.searchKnowledge(ids, q),
+      knowledgeMentions: (ids, needle) => store.knowledgeMentions(ids, needle),
+      workflows: store.listWorkflows().map((w) => ({ id: w.id, name: w.name, status: w.status, triggerType: w.trigger.type })),
+      templates: store.listTemplates().map((t) => ({ name: t.name, language: t.language, params: t.params })),
+      fetch: d.fetchImpl,
     });
     const events: ConvEvent[] = (b.events ?? []).map((t, i) => ({ id: i, conversation_id: 0, type: t, payload: { by: 'a test' }, after_message_id: 0, created_at: Date.now() }));
     const t0 = Date.now();
@@ -359,6 +381,211 @@ export function buildApp(d: AppDeps): { app: FastifyInstance; drain: () => Promi
     const b = req.body as { query?: string; source_ids?: number[] };
     const ids = b.source_ids?.length ? b.source_ids.map(Number) : store.listSources().map((s) => s.id);
     return { hits: store.searchKnowledge(ids, String(b.query ?? '')) };
+  });
+
+
+  // ---- review (prompt linter) ------------------------------------------------------------------
+  const reviewInput = (draft: AgentDraft) => ({
+    draft, workspace,
+    agents: store.activeAgents().map((x) => x.name),
+    workflows: store.listWorkflows().map((w) => ({ name: w.name, status: w.status, triggerType: w.trigger.type })),
+    templates: store.listTemplates().map((t) => t.name),
+  });
+
+  app.post('/api/agents/:id/review', async (req) => {
+    const a = agentOr404(req);
+    const b = (req.body ?? {}) as { draft?: Partial<AgentDraft> };
+    const draft = b.draft ? normalizeDraft({ ...a.draft, ...b.draft, skills: { ...a.draft.skills, ...(b.draft.skills ?? {}) } }) : a.draft;
+    const issues = reviewAgent(reviewInput(draft));
+    return { issues, summary: summarize(issues) };
+  });
+
+  /** Which tools would the model get? (debug aid for the editor) */
+  app.get('/api/agents/:id/tools', async (req) => {
+    const a = agentOr404(req);
+    const { env } = simEnv({ workspace, state: { contact: { name: null, phone: '', email: null, lifecycle: null, tags: [], fields: {} }, status: 'open', handler: 'ai', assignee_team: null, assignee_user: null }, selfName: a.name, selfId: a.id,
+      agents: store.activeAgents().map((x) => ({ id: x.id, name: x.name })), search: () => [],
+      workflows: store.listWorkflows().map((w) => ({ id: w.id, name: w.name, status: w.status, triggerType: w.trigger.type })),
+      templates: store.listTemplates().map((t) => ({ name: t.name, language: t.language, params: t.params })) });
+    return buildTools({ ...a.draft, id: a.id, name: a.name, version: 0 }, env).map((t) => ({ name: t.name, description: t.description }));
+  });
+
+  // ---- contacts --------------------------------------------------------------------------------
+  app.put('/api/contacts/:id', async (req) => {
+    const c = store.getContact(Number((req.params as { id: string }).id));
+    if (!c) throw notFound('contact not found');
+    const b = req.body as { name?: string; email?: string; lifecycle?: string | null; tags?: string[]; fields?: Record<string, string | number> };
+    const conv = store.lastConversation(c.id);
+    const o = { source: 'user' as const };
+    if (b.fields) {
+      for (const [k, v] of Object.entries(b.fields)) {
+        const def = workspace.custom_fields.find((f) => f.name === k);
+        if (!def && k !== 'Name' && k !== 'Email') throw bad(`Unknown field "${k}"`);
+        const val = def?.type === 'number' ? Number(v) : String(v);
+        if (typeof val === 'number' && !Number.isFinite(val)) throw bad(`Field "${k}" needs a number`);
+        await pipeline.setField(c.id, conv?.id ?? null, k, val, o);
+      }
+    }
+    if (b.name !== undefined) await pipeline.setField(c.id, conv?.id ?? null, 'Name', b.name, o);
+    if (b.email !== undefined) await pipeline.setField(c.id, conv?.id ?? null, 'Email', b.email, o);
+    if (b.lifecycle !== undefined && b.lifecycle !== null) {
+      if (!workspace.lifecycle_stages.includes(b.lifecycle)) throw bad(`Unknown lifecycle stage "${b.lifecycle}"`);
+      await pipeline.setLifecycle(c.id, conv?.id ?? null, b.lifecycle, o);
+    }
+    if (b.tags) {
+      const bad_ = b.tags.filter((t) => !workspace.tags.includes(t));
+      if (bad_.length) throw bad(`Unknown tag(s): ${bad_.join(', ')}`);
+      const cur = store.getContact(c.id)!.tags;
+      await pipeline.updateTags(c.id, conv?.id ?? null, b.tags.filter((t) => !cur.includes(t)), cur.filter((t) => !b.tags!.includes(t)), o);
+    }
+    return store.getContact(c.id);
+  });
+
+  // ---- WhatsApp templates ----------------------------------------------------------------------
+  app.get('/api/templates', async () => store.listTemplates());
+  app.post('/api/templates', async (req) => {
+    const b = req.body as { name?: string; language?: string; body?: string };
+    const name = String(b.name ?? '').trim(), language = String(b.language ?? 'en').trim(), body = String(b.body ?? '').trim();
+    if (!/^[a-z0-9_]{1,100}$/.test(name)) throw bad('Template names use lowercase letters, numbers and _');
+    if (!/^[a-z]{2,3}(_[A-Z]{2})?$/.test(language)) throw bad('Language looks like en, ms or en_US');
+    if (!body || body.length > 1024) throw bad('Body is required (max 1024 characters)');
+    return store.upsertTemplate(name, language, body);
+  });
+  app.delete('/api/templates/:id', async (req, reply) => { store.deleteTemplate(Number((req.params as { id: string }).id)); return reply.code(204).send(); });
+  app.post('/api/conversations/:id/template', async (req, reply) => {
+    const conv = convOr404(req);
+    const b = req.body as { name?: string; params?: string[] };
+    try {
+      const m = await pipeline.sendTemplate(conv.id, String(b.name ?? ''), null, (b.params ?? []).map(String), 'human');
+      await pipeline.humanActivity(conv.id, 'outgoing');
+      return reply.code(m.status === 'failed' ? 502 : 200).send({ message: m });
+    } catch (e) { throw bad((e as Error).message); }
+  });
+
+  // ---- metrics ---------------------------------------------------------------------------------
+  app.get('/api/metrics', async (req) => {
+    const days = Math.max(1, Math.min(90, Number((req.query as { days?: string }).days ?? 14) || 14));
+    return { days, ...store.metrics(Date.now() - days * 86_400_000) };
+  });
+
+  // ---- workflows -------------------------------------------------------------------------------
+  const wfOr404 = (req: FastifyRequest) => {
+    const w = store.getWorkflow(Number((req.params as { id: string }).id));
+    if (!w) throw notFound('workflow not found');
+    return w;
+  };
+  const wfLookup = () => ({
+    agentNames: store.activeAgents().map((a) => a.name),
+    workflows: store.listWorkflows().map((w) => ({ id: w.id, name: w.name, status: w.status, triggerType: w.trigger.type })),
+    templateNames: store.listTemplates().map((t) => t.name),
+  });
+  const wfView = (w: ReturnType<typeof wfOr404>) => ({ ...w, hook_url: w.trigger.type === 'incoming_webhook' ? `/hooks/workflow/${w.hook_token}` : null, active_runs: store.activeRuns({ workflowId: w.id }).length });
+  const checkStructure = (g: Graph, t: Trigger) => {
+    const errs = [...structuralIssues(g), ...validateTrigger(t)];
+    if (errs.length) throw new HttpError(400, errs[0]);
+  };
+
+  app.get('/api/workflows', async () => store.listWorkflows().map(wfView));
+  app.get('/api/workflows/:id', async (req) => wfView(wfOr404(req)));
+
+  app.post('/api/workflows', async (req) => {
+    const b = req.body as { name?: string; trigger?: Trigger; graph?: Graph; settings?: WorkflowSettings };
+    const name = String(b.name ?? '').trim();
+    if (!name || name.length > 80) throw bad('name is required (max 80 characters)');
+    if (store.getWorkflowByName(name)) throw bad(`A workflow named "${name}" already exists`);
+    if (store.countWorkflows() >= LIMITS.maxWorkflows) throw bad(`A workspace can have at most ${LIMITS.maxWorkflows} workflows`);
+    const trigger = b.trigger ?? { type: 'manual' as const };
+    const graph = b.graph ?? { start: null, steps: {} };
+    checkStructure(graph, trigger);
+    return wfView(store.createWorkflow(name, trigger, graph, b.settings ?? {}, newHookToken()));
+  });
+
+  app.put('/api/workflows/:id', async (req) => {
+    const w = wfOr404(req);
+    if (w.status === 'published') throw new HttpError(409, 'Stop the workflow before editing it');
+    const b = req.body as { name?: string; trigger?: Trigger; graph?: Graph; settings?: WorkflowSettings };
+    if (b.name !== undefined) {
+      const name = b.name.trim();
+      if (!name || name.length > 80) throw bad('name is required (max 80 characters)');
+      const dup = store.getWorkflowByName(name);
+      if (dup && dup.id !== w.id) throw bad(`A workflow named "${name}" already exists`);
+    }
+    checkStructure(b.graph ?? w.graph, b.trigger ?? w.trigger);
+    return wfView(store.updateWorkflow(w.id, { name: b.name?.trim(), trigger: b.trigger, graph: b.graph, settings: b.settings }));
+  });
+
+  /** Full completeness check, without publishing (the builder shows these next to the steps). */
+  app.post('/api/workflows/:id/validate', async (req) => {
+    const w = wfOr404(req);
+    const b = (req.body ?? {}) as { graph?: Graph; trigger?: Trigger };
+    const graph = b.graph ?? w.graph, trigger = b.trigger ?? w.trigger;
+    if (structuralIssues(graph).length) return { issues: structuralIssues(graph).map((m) => ({ stepId: null, message: m })) };
+    return { issues: [...validateTrigger(trigger).map((m) => ({ stepId: null, message: m })), ...validateGraph(graph, workspace, { publish: true, lookup: wfLookup() })] };
+  });
+
+  app.post('/api/workflows/:id/publish', async (req) => {
+    const w = wfOr404(req);
+    if (w.status === 'published') throw new HttpError(409, 'Already published');
+    const issues = [...validateTrigger(w.trigger).map((m) => ({ stepId: null, message: m })), ...validateGraph(w.graph, workspace, { publish: true, lookup: wfLookup() })];
+    if (issues.length) throw Object.assign(new HttpError(400, `Fix these issues before publishing: ${issues.slice(0, 3).map((i) => i.message).join('; ')}`), { issues });
+    return wfView(store.setWorkflowStatus(w.id, 'published'));
+  });
+
+  app.post('/api/workflows/:id/stop', async (req) => {
+    const w = wfOr404(req);
+    if (w.status !== 'published') throw new HttpError(409, 'Only a published workflow can be stopped');
+    const ejected = engine.stopWorkflow(w.id);
+    return { ...wfView(store.setWorkflowStatus(w.id, 'stopped')), ejected };
+  });
+
+  app.post('/api/workflows/:id/clone', async (req) => {
+    const w = wfOr404(req);
+    if (store.countWorkflows() >= LIMITS.maxWorkflows) throw bad(`A workspace can have at most ${LIMITS.maxWorkflows} workflows`);
+    let name = `${w.name} clone`;
+    for (let i = 2; store.getWorkflowByName(name); i++) name = `${w.name} clone ${i}`;
+    return wfView(store.createWorkflow(name, w.trigger, w.graph, w.settings, newHookToken()));
+  });
+
+  app.delete('/api/workflows/:id', async (req, reply) => {
+    const w = wfOr404(req);
+    if (w.status === 'published') throw new HttpError(409, 'Stop the workflow before deleting it');
+    store.deleteWorkflow(w.id);
+    return reply.code(204).send();
+  });
+
+  app.get('/api/workflows/:id/runs', async (req) => store.runsFor(wfOr404(req).id));
+
+  /** Run a draft (or any) workflow for a phone number, flagged as a test. */
+  app.post('/api/workflows/:id/test', async (req) => {
+    const w = wfOr404(req);
+    const b = req.body as { phone?: string; name?: string; vars?: Record<string, unknown> };
+    const phone = String(b.phone ?? '').replace(/\D/g, '');
+    if (phone.length < 8 || phone.length > 15) throw bad('phone must be 8-15 digits');
+    const issues = validateGraph(w.graph, workspace, { publish: true, lookup: wfLookup() });
+    if (issues.length) throw bad(`Fix these issues first: ${issues.slice(0, 3).map((i) => i.message).join('; ')}`);
+    const contact = store.upsertContact(phone, b.name?.trim() || null);
+    try { return await engine.startFor(w, contact.id, null, b.vars ?? {}, true); } catch (e) { throw new HttpError(409, (e as Error).message); }
+  });
+
+  app.post('/api/conversations/:id/shortcut', async (req) => {
+    const conv = convOr404(req);
+    const w = store.getWorkflow(Number((req.body as { workflow_id?: number }).workflow_id));
+    if (!w || w.status !== 'published' || w.trigger.type !== 'shortcut') throw bad('Choose a published workflow with the Shortcut trigger');
+    try { return await engine.startFor(w, conv.contact_id, conv.id, { label: String(w.trigger.config?.label ?? w.name) }); } catch (e) { throw new HttpError(409, (e as Error).message); }
+  });
+
+  /** Public entry point for the "Incoming Webhook" trigger; the unguessable token is the credential. */
+  app.post('/hooks/workflow/:token', async (req, reply) => {
+    const w = store.getWorkflowByToken((req.params as { token: string }).token);
+    if (!w || w.status !== 'published' || w.trigger.type !== 'incoming_webhook') return reply.code(404).send({ error: 'not found' });
+    const body = (req.body ?? {}) as Record<string, any>;
+    const phone = String(body.phone ?? body.contact?.phone ?? '').replace(/\D/g, '');
+    if (phone.length < 8 || phone.length > 15) return reply.code(400).send({ error: 'phone (8-15 digits) is required' });
+    const contact = store.upsertContact(phone, typeof (body.name ?? body.contact?.name) === 'string' ? String(body.name ?? body.contact?.name).slice(0, 100) : null);
+    try {
+      const run = await engine.startFor(w, contact.id, null, triggerVarsFromBody(body));
+      return reply.code(202).send({ run_id: run.id, status: run.status });
+    } catch (e) { return reply.code(409).send({ error: (e as Error).message }); }
   });
 
   const drain = async () => {

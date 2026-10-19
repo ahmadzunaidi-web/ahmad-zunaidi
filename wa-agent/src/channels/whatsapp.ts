@@ -8,6 +8,8 @@ export interface InboundMessage {
   timestamp: number;
   type: string;
   text: string;
+  /** Click-to-WhatsApp ad referral, when the chat was started from an ad. */
+  referral?: { sourceUrl: string; sourceId: string; sourceType: string; headline: string; body: string };
 }
 
 export interface StatusUpdate {
@@ -69,6 +71,10 @@ export function parseWebhook(body: any): { messages: InboundMessage[]; statuses:
           name: names.get(String(m.from)) || null,
           timestamp: Number(m.timestamp ?? 0) * 1000 || Date.now(),
           ...t,
+          ...(m.referral ? { referral: {
+            sourceUrl: String(m.referral.source_url ?? ''), sourceId: String(m.referral.source_id ?? ''), sourceType: String(m.referral.source_type ?? ''),
+            headline: String(m.referral.headline ?? ''), body: String(m.referral.body ?? ''),
+          } } : {}),
         });
       }
       for (const s of v.statuses ?? []) {
@@ -80,8 +86,40 @@ export function parseWebhook(body: any): { messages: InboundMessage[]; statuses:
   return { messages, statuses };
 }
 
+export interface InteractiveChoices {
+  body: string;
+  /** 1-3 choices -> reply buttons (title max 20 chars); 4-10 -> list (row title max 24 chars). */
+  choices: string[];
+}
+
 export interface Sender {
   sendText(to: string, body: string): Promise<{ id: string }>;
+  /** Optional: when missing the platform falls back to numbered text. */
+  sendInteractive?(to: string, i: InteractiveChoices): Promise<{ id: string }>;
+  sendTemplate?(to: string, name: string, language: string, params: string[]): Promise<{ id: string }>;
+  sendMedia?(to: string, kind: 'image' | 'document', url: string, caption?: string, filename?: string): Promise<{ id: string }>;
+}
+
+export const BUTTON_TITLE_MAX = 20;
+export const LIST_ROW_TITLE_MAX = 24;
+export const MAX_CHOICES = 10;
+
+/** Which WhatsApp interactive shape fits these choices (or null -> numbered text). */
+export function interactiveKind(choices: string[]): 'buttons' | 'list' | null {
+  if (!choices.length || choices.length > MAX_CHOICES) return null;
+  if (choices.length <= 3 && choices.every((c) => c.length <= BUTTON_TITLE_MAX)) return 'buttons';
+  if (choices.every((c) => c.length <= LIST_ROW_TITLE_MAX)) return 'list';
+  return null;
+}
+
+export function interactivePayload(i: InteractiveChoices): Record<string, unknown> {
+  const kind = interactiveKind(i.choices);
+  if (!kind) throw new Error('choices do not fit a WhatsApp interactive message');
+  const body = { text: i.body.slice(0, 1024) };
+  if (kind === 'buttons') {
+    return { type: 'button', body, action: { buttons: i.choices.map((c, n) => ({ type: 'reply', reply: { id: `c${n + 1}`, title: c } })) } };
+  }
+  return { type: 'list', body, action: { button: 'Pilih', sections: [{ title: 'Pilihan', rows: i.choices.map((c, n) => ({ id: `c${n + 1}`, title: c })) }] } };
 }
 
 export const WA_MAX_TEXT = 4096;
@@ -105,11 +143,11 @@ export function splitText(text: string, max = WA_MAX_TEXT): string[] {
 export class CloudApiSender implements Sender {
   constructor(private cfg: Pick<Config, 'waAccessToken' | 'waPhoneNumberId' | 'waApiVersion'>, private fetchImpl: typeof fetch = fetch) {}
 
-  async sendText(to: string, body: string): Promise<{ id: string }> {
+  private async post(payload: Record<string, unknown>): Promise<{ id: string }> {
     const res = await this.fetchImpl(`https://graph.facebook.com/${this.cfg.waApiVersion}/${this.cfg.waPhoneNumberId}/messages`, {
       method: 'POST',
       headers: { authorization: `Bearer ${this.cfg.waAccessToken}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to, type: 'text', text: { body, preview_url: false } }),
+      body: JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', ...payload }),
     });
     const data: any = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(`WhatsApp send failed (${res.status}): ${data?.error?.message ?? JSON.stringify(data)}`);
@@ -117,15 +155,35 @@ export class CloudApiSender implements Sender {
     if (!id) throw new Error('WhatsApp send returned no message id');
     return { id: String(id) };
   }
+
+  sendText(to: string, body: string) {
+    return this.post({ to, type: 'text', text: { body, preview_url: false } });
+  }
+  sendInteractive(to: string, i: InteractiveChoices) {
+    return this.post({ to, type: 'interactive', interactive: interactivePayload(i) });
+  }
+  sendTemplate(to: string, name: string, language: string, params: string[]) {
+    return this.post({
+      to, type: 'template',
+      template: { name, language: { code: language }, ...(params.length ? { components: [{ type: 'body', parameters: params.map((text) => ({ type: 'text', text })) }] } : {}) },
+    });
+  }
+  sendMedia(to: string, kind: 'image' | 'document', url: string, caption?: string, filename?: string) {
+    return this.post({ to, type: kind, [kind]: { link: url, ...(caption ? { caption } : {}), ...(kind === 'document' && filename ? { filename } : {}) } });
+  }
 }
 
 /** Used when WA credentials are not configured: logs instead of sending. */
 export class DryRunSender implements Sender {
   readonly sent: { to: string; body: string }[] = [];
   private n = 0;
-  async sendText(to: string, body: string): Promise<{ id: string }> {
+  private rec(to: string, body: string) {
     this.sent.push({ to, body });
     console.log(`[dry-run WhatsApp] -> ${to}: ${body.slice(0, 120)}`);
     return { id: `dryrun.${Date.now()}.${this.n++}` };
   }
+  async sendText(to: string, body: string) { return this.rec(to, body); }
+  async sendInteractive(to: string, i: InteractiveChoices) { return this.rec(to, `${i.body} [${i.choices.join(' | ')}]`); }
+  async sendTemplate(to: string, name: string, _l: string, params: string[]) { return this.rec(to, `[template ${name}] ${params.join(', ')}`); }
+  async sendMedia(to: string, kind: string, url: string, caption?: string) { return this.rec(to, `[${kind}] ${url} ${caption ?? ''}`.trim()); }
 }

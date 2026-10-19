@@ -333,11 +333,11 @@ Jangan reka harga/diskaun. Jangan janji tarikh penghantaran. Isu aduan → assig
 | 3 | AI Agent asas (instructions sahaja) | Bot balas ikut persona | 1–2 hari | ✅ |
 | 4 | Skills: assign, close, set_field, set_lifecycle | Lead dikelaskan automatik | 2–3 hari | ✅ |
 | 5 | Knowledge + RAG | Jawab daripada dokumen + tunjuk sumber | 3–4 hari | ✅ |
-| 6 | Workflow engine MVP (ask/branch/wait/assign) | Menu + cabang AI fallback | 4–6 hari | ☐ |
-| 7 | Builder UI (prompt editor, workflow canvas, simulator) | Pengguna bukan-coder boleh konfigurasi | 5–8 hari | ☐ |
-| 8 | HTTP skill, template & 24h window, metrik | Siap produksi | 3–4 hari | ☐ |
+| 6 | Workflow engine MVP (ask/branch/wait/assign) | Menu + cabang AI fallback | 4–6 hari | ✅ |
+| 7 | Builder UI (prompt editor, workflow canvas, simulator) | Pengguna bukan-coder boleh konfigurasi | 5–8 hari | ✅ |
+| 8 | HTTP skill, template & 24h window, metrik | Siap produksi | 3–4 hari | ✅ |
 
-Milestone 1–5 siap dalam [`wa-agent/`](wa-agent/README.md) (56 ujian lulus; belum diuji dengan WhatsApp/Claude sebenar — lihat "Known limits" dalam README). Raikan setiap tanda ✔ (log kemajuan dalam file ini).
+Semua 8 milestone siap dalam [`wa-agent/`](wa-agent/README.md) (108 ujian lulus + ujian pelayar; belum diuji dengan WhatsApp/Claude sebenar — lihat "Known limits" dalam README). Panduan rebuild: [`docs/REBUILD-GUIDE.md`](docs/REBUILD-GUIDE.md). Raikan setiap tanda ✔ (log kemajuan dalam file ini).
 
 ## 4. Semakan 4 Hukum
 1. **Jelas** – Satu rajah, jadual milestone dengan status nampak, nama kanonik dalam prompt.

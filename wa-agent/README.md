@@ -1,32 +1,35 @@
-# WA Agent — milestones 1–5
+# WA Agent
 
-Clean-room rebuild of a WhatsApp AI-agent platform (inbox + AI agent with skills + knowledge/RAG), following
-`../respondio-ai-agent-rebuild-blueprint.md`. TypeScript, Fastify, SQLite (`node:sqlite`, FTS5), Claude API.
+Clean-room rebuild of a WhatsApp AI-agent platform: inbox, AI agents with skills, knowledge/RAG, workflows, follow-ups.
+TypeScript · Fastify · SQLite (`node:sqlite`, FTS5) · Claude API. Specification: `../docs/respondio-ai-agent-rebuild-blueprint.md`,
+rebuild instructions: `../docs/REBUILD-GUIDE.md`.
 
 | # | Milestone | State |
 |---|---|---|
 | 1 | WhatsApp Cloud API webhook (HMAC), idempotent storage, echo bot, 24h window | ✅ tested |
-| 2 | Inbox UI + API: takeover, assign (team round-robin / user / AI), close/reopen, internal notes, live updates (SSE) | ✅ tested |
-| 3 | AI agent: instructions, `$contact.*` variables, wait-time debounce, draft/publish versions, "Test agent" panel | ✅ tested (scripted model) |
-| 4 | Skills: assign, close, contact field, lifecycle, tags, internal comment — exact-name validation | ✅ tested (scripted model) |
-| 5 | Knowledge: text + public URL crawl (SSRF-safe), chunking, BM25 search, per-agent source selection | ✅ tested |
+| 2 | Inbox UI + API: takeover, assign (team round-robin / user / AI), close/reopen, internal notes, live updates | ✅ tested |
+| 3 | AI agent: instructions, `$contact.*`, wait-time debounce, draft/publish versions, "Test agent" panel | ✅ tested |
+| 4 | Skills with exact-name validation (assign, close, field, lifecycle, tags, comment) | ✅ tested |
+| 5 | Knowledge: text + public URL crawl (SSRF-safe), BM25 search, per-agent sources | ✅ tested |
+| 6 | Workflow engine: 9 trigger types, 16 step types, Ask-a-Question (9 answer types), branch/wait/assign/jump/HTTP/templates, exit conditions | ✅ tested |
+| 7 | Prompt **Review** linter with "Apply fix", visual workflow builder, metrics dashboard | ✅ tested (+ browser smoke test) |
+| 8 | HTTP skill, Trigger-Workflow skill, persistent follow-ups, attachments, WhatsApp templates + buttons/lists, AI rate limit, restart recovery | ✅ tested |
 
 ## Run it
 
 ```bash
-cd wa-agent
-npm install
+npm ci
 cp .env.example .env        # optional; the app also runs with no env at all
 npm run dev                 # http://localhost:3000
-npm test                    # 53 tests
+npm test                    # 108 tests
 npm run typecheck
 ```
 
-With **no credentials** it still runs end to end: a customer simulator is built into the inbox, WhatsApp sends are
-logged (dry-run) and a keyword-based **demo model** stands in for Claude (clearly labelled in the header chips).
-It is not a language model — set `ANTHROPIC_API_KEY` for real answers.
+With **no credentials** everything still works end to end: a customer simulator is built into the inbox, WhatsApp sends
+are logged (dry-run) and a keyword-based **demo model** stands in for Claude (shown in the header chips; it is not a
+language model). Set `ANTHROPIC_API_KEY` for real answers.
 
-Edit `config/workspace.json` to define your teams, users, lifecycle stages, contact fields, closing notes and tags.
+Edit `config/workspace.json` for your teams, users, lifecycle stages, contact fields, closing notes, tags and timezone.
 The AI may only use these **exact** names; anything else makes the skill fail and the error lists the valid names.
 
 ### Environment
@@ -37,45 +40,41 @@ The AI may only use these **exact** names; anything else makes the skill fail an
 | `WA_PHONE_NUMBER_ID`, `WA_ACCESS_TOKEN` | Send via the WhatsApp Cloud API. Unset → dry-run |
 | `WA_APP_SECRET` | Verifies `X-Hub-Signature-256`. **Required** unless `ALLOW_UNSIGNED=1` (local only) |
 | `WA_VERIFY_TOKEN` | Token for Meta's `GET /webhook/whatsapp` handshake |
-| `ADMIN_TOKEN` | Bearer token for `/api/*` (the UI prompts for it). **Set it before exposing the server** |
-| `ECHO_FALLBACK` | Echo inbound text when no AI agent handles the chat (default on outside production) |
-| `DEV_SIMULATOR` | Enables `/api/dev/simulate` and the simulator box (default on outside production) |
+| `ADMIN_TOKEN` | Bearer token for `/api/*`. **Required when `NODE_ENV=production`** |
+| `AI_MAX_RUNS_PER_HOUR` | Circuit breaker per conversation (default 40) |
+| `ECHO_FALLBACK`, `DEV_SIMULATOR` | Echo bot / customer simulator (default on outside production) |
 | `PORT`, `DB_PATH`, `WORKSPACE_CONFIG`, `AGENT_MODEL` | Port, SQLite file, workspace JSON, default model |
 
 ### Connect WhatsApp
 
 1. Meta for Developers → your app → WhatsApp → Configuration.
-2. Callback URL `https://<your-host>/webhook/whatsapp`, verify token = `WA_VERIFY_TOKEN`, subscribe to **messages**.
-3. Put the app secret in `WA_APP_SECRET`, the permanent token in `WA_ACCESS_TOKEN`, the number's id in `WA_PHONE_NUMBER_ID`.
+2. Callback URL `https://<host>/webhook/whatsapp`, verify token = `WA_VERIFY_TOKEN`, subscribe to **messages**.
+3. `WA_APP_SECRET` (app secret), `WA_ACCESS_TOKEN` (permanent token), `WA_PHONE_NUMBER_ID`.
+4. Register approved templates in **Knowledge → Template WhatsApp** (needed to message outside the 24h window).
 
-## How it fits together
+## Workflows in 60 seconds
 
-```
-Meta ──webhook──► /webhook/whatsapp ─► Pipeline.handleInbound ─► store (contact, conversation, message)
-                                            │ route by handler
-                          none ─► default AI agent? ─► else echo
-                          ai   ─► debounce(wait_seconds) ─► runAgent ─► skills (tools) + search_knowledge_base
-                          human─► inbox only                         └► reply ─► Pipeline.send (24h window) ─► Cloud API
-```
+Workflows tab → **+ Workflow baharu** → "Menu → AI fallback": greet, ask a multiple-choice menu, route a valid choice to a
+team, and send *anything else* to an AI agent. Click a step to edit it, **+** to insert one, **Publish** to go live.
+Triggers: conversation opened/closed, tag/field/lifecycle updated, shortcut (button in the inbox), incoming webhook
+(`POST /hooks/workflow/<token>` with `{"phone": "...", ...}` → `{{$trigger.x}}`), click-to-WhatsApp ad, manual.
+Texts use `{{$contact.firstname}}`, `{{$var.topic}}`, `{{$trigger.order.id}}`.
 
-* `src/agent/runtime.ts` — builds the context (platform rules, workspace names, contact state, events, last 20
-  messages), runs the tool loop (max 6 iterations), replays assistant content verbatim and returns all tool results in
-  one user message.
-* `src/agent/skills.ts` — tool definitions + exact-name validation. The owner's "when and how" prompt is appended to
-  each tool's description.
-* `src/core/pipeline.ts` — routing, debounce, superseded-reply handling, AI→AI handoff (max 3 hops), 24h window.
-* Versioning: edits change the **draft**; **Publish** creates a new immutable version that the runtime uses.
+## HTTP API (all under `/api`, admin token)
+
+Conversations `GET/POST /conversations[/:id[/messages|takeover|assign|status|comments|template|shortcut]]` ·
+Contacts `PUT /contacts/:id` · Agents `GET/POST/PUT /agents[/:id]`, `…/publish|unpublish|test|review|tools|runs` ·
+Knowledge `GET/POST/DELETE /knowledge`, `POST /knowledge/search` · Workflows `GET/POST/PUT/DELETE /workflows[/:id]`,
+`…/validate|publish|stop|clone|test|runs` · Templates `GET/POST/DELETE /templates` · `GET /metrics?days=` ·
+`GET /config`, `PUT /settings/default-agent`, `GET /events` (SSE), `POST /dev/simulate`.
 
 ## Known limits (be honest before going live)
 
-* **Not tested against live services.** WhatsApp Cloud API and Claude are exercised only through fakes/scripted
-  responses in tests; the Cloud API sender and `ClaudeProvider` have not been run with real credentials.
-* Inbound **media is not downloaded**: images/audio/etc. reach the AI as placeholders (`[Image]`, `[Audio message]`).
-* Outbound is **plain text only**; WhatsApp **template messages** (needed outside the 24h window) are not implemented
-  — such sends are marked failed with a clear reason.
-* Single workspace, in-process queue and timers (a restart drops pending debounce timers). Use a real queue
-  (e.g. BullMQ) before running more than one instance.
-* Retrieval is keyword/BM25 (FTS5), not embeddings; PDF/DOCX parsing is not included (text, markdown, CSV, HTML only).
-* Not built yet: workflow engine, HTTP-request and trigger-workflow skills, follow-ups, prompt "Review" linter,
-  multi-user auth (one shared `ADMIN_TOKEN`).
+* **Not tested against live services.** WhatsApp Cloud API and Claude are exercised through fakes/scripted responses; the
+  Cloud API sender and `ClaudeProvider` request shapes are unit-tested but have not run with real credentials.
+* Inbound **media is not downloaded** (images/audio reach the AI as `[Image]`, `[Audio message]` placeholders).
+* No voice calls, Google Sheets/Conversions-API steps, or "only assign to online users" (no presence).
+* Retrieval is keyword/BM25, not embeddings; no PDF/DOCX parsing (text, markdown, CSV, HTML only).
+* Single workspace, single `ADMIN_TOKEN`, single instance (debounce timers are in-process; follow-ups, workflow timers
+  and `recover()` are persisted).
 * `node:sqlite` is experimental in Node 22 (prints a warning); requires Node ≥ 22.13.

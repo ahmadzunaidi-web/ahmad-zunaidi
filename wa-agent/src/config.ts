@@ -17,6 +17,8 @@ export interface Config {
   defaultModel: string;
   /** WhatsApp free-form messages only allowed within this window after the last inbound message. */
   windowMs: number;
+  /** Circuit breaker: max AI runs per conversation per hour. */
+  aiMaxRunsPerHour: number;
 }
 
 const bool = (v: string | undefined, d: boolean) => (v === undefined || v === '' ? d : /^(1|true|yes)$/i.test(v));
@@ -39,5 +41,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     anthropicKey: env.ANTHROPIC_API_KEY ?? '',
     defaultModel: env.AGENT_MODEL ?? 'claude-opus-5-5',
     windowMs: 24 * 60 * 60 * 1000,
+    aiMaxRunsPerHour: Number(env.AI_MAX_RUNS_PER_HOUR ?? 40),
   };
 }

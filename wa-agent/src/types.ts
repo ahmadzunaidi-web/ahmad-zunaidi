@@ -1,5 +1,5 @@
 export type Handler = 'none' | 'ai' | 'human';
-export type MessageSender = 'contact' | 'ai' | 'human' | 'echo' | 'system';
+export type MessageSender = 'contact' | 'ai' | 'human' | 'echo' | 'system' | 'workflow';
 export type MessageStatus = 'received' | 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
 
 export interface Contact {
@@ -58,12 +58,31 @@ export interface Comment {
   created_at: number;
 }
 
-export type SkillKey = 'assign' | 'close' | 'set_field' | 'set_lifecycle' | 'tags' | 'comment';
+export type SkillKey = 'assign' | 'close' | 'set_field' | 'set_lifecycle' | 'tags' | 'comment' | 'http' | 'trigger_workflow' | 'followup' | 'attachment';
 
 export interface SkillConfig {
   enabled: boolean;
   /** "When and how should this skill be performed?" (appended to the tool description). */
   prompt: string;
+}
+
+export interface HttpInput {
+  name: string;
+  format: 'text' | 'number' | 'boolean' | 'date';
+  description: string;
+  array?: boolean;
+}
+
+/** One "Make HTTP request" action (max 10 per agent). Values may use $agent.<input> and $contact.<field>. */
+export interface HttpAction {
+  name: string;
+  description: string;
+  inputs: HttpInput[];
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  url: string;
+  query: Record<string, string>;
+  headers: Record<string, string>;
+  body?: string;
 }
 
 export interface AgentDraft {
@@ -72,6 +91,7 @@ export interface AgentDraft {
   wait_seconds: number;
   knowledge_ids: number[];
   skills: Record<SkillKey, SkillConfig>;
+  http_actions: HttpAction[];
 }
 
 export interface AgentSnapshot extends AgentDraft {

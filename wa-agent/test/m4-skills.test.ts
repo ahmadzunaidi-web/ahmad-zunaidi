@@ -6,14 +6,14 @@ import type { AgentSnapshot } from '../src/types.js';
 import { api, inbound, publishAgent, setup } from './helpers.js';
 
 const allOn = (): AgentSnapshot => ({
-  id: 1, name: 'Sales Agent', version: 1, instructions: 'x', model: 'claude-opus-5-5', wait_seconds: 0, knowledge_ids: [],
+  id: 1, name: 'Sales Agent', version: 1, instructions: 'x', model: 'claude-opus-5-5', wait_seconds: 0, knowledge_ids: [], http_actions: [],
   skills: Object.fromEntries(['assign', 'close', 'set_field', 'set_lifecycle', 'tags', 'comment'].map((k) => [k, { enabled: true, prompt: '' }])) as never,
 });
 
 function sim(extra: Partial<ConvState['contact']> = {}) {
   const c = setup();
   const state: ConvState = { contact: { name: 'Aina', phone: '601', email: null, lifecycle: null, tags: [], fields: {}, ...extra }, status: 'open', handler: 'ai', assignee_team: null, assignee_user: null };
-  const s = simEnv({ workspace: c.workspace, state, selfName: 'Sales Agent', agents: [{ id: 1, name: 'Sales Agent' }, { id: 2, name: 'Support Agent' }], search: () => [] });
+  const s = simEnv({ workspace: c.workspace, state, selfName: 'Sales Agent', selfId: 1, agents: [{ id: 1, name: 'Sales Agent' }, { id: 2, name: 'Support Agent' }], search: () => [] });
   return { ...s, state, snap: allOn(), run: (name: string, input: Record<string, unknown>) => executeTool(name, input, s.env, allOn()) };
 }
 
@@ -23,7 +23,8 @@ describe('M4: skills validate exact workspace names', () => {
     const snap = allOn();
     snap.skills.tags.enabled = false;
     snap.skills.assign.prompt = 'If the contact asks for a human, assign to Sales Team';
-    const tools = buildTools(snap, c.workspace, [{ id: 2, name: 'Support Agent' }], 'Sales Agent');
+    const { env } = simEnv({ workspace: c.workspace, state: { contact: { name: 'A', phone: '1', email: null, lifecycle: null, tags: [], fields: {} }, status: 'open', handler: 'ai', assignee_team: null, assignee_user: null }, selfName: 'Sales Agent', selfId: 1, agents: [{ id: 2, name: 'Support Agent' }], search: () => [] });
+    const tools = buildTools(snap, env);
     expect(tools.map((t) => t.name)).toEqual(['assign_conversation', 'close_conversation', 'update_contact_field', 'update_lifecycle_stage', 'add_internal_comment']);
     const assign = tools[0].description;
     expect(assign).toContain('"Sales Team"');
@@ -31,56 +32,56 @@ describe('M4: skills validate exact workspace names', () => {
     expect(assign).toContain('If the contact asks for a human');
   });
 
-  it('assign: team round robin, user, AI agent; rejects unknown targets and self-assignment', () => {
+  it('assign: team round robin, user, AI agent; rejects unknown targets and self-assignment', async () => {
     const t = sim();
-    expect(t.run('assign_conversation', { target: 'Sales Team' })).toMatchObject({ ok: true });
+    expect((await t.run('assign_conversation', { target: 'Sales Team' }))).toMatchObject({ ok: true });
     expect(t.state).toMatchObject({ handler: 'human', assignee_team: 'Sales Team', assignee_user: 'Aisyah' });
-    expect(t.run('assign_conversation', { target: '@Nur' })).toMatchObject({ ok: true });
+    expect((await t.run('assign_conversation', { target: '@Nur' }))).toMatchObject({ ok: true });
     expect(t.state.assignee_team).toBe('Support Team');
-    const unknown = t.run('assign_conversation', { target: 'sales team' }); // exact match required (case-sensitive)
+    const unknown = await t.run('assign_conversation', { target: 'sales team' }); // exact match required (case-sensitive)
     expect(unknown.ok).toBe(false);
     expect(unknown.message).toContain('"Sales Team"');
-    expect(t.run('assign_conversation', { target: 'Sales Agent' })).toMatchObject({ ok: false, message: expect.stringContaining('yourself') });
-    expect(t.run('assign_conversation', { target: 'Support Agent' })).toMatchObject({ ok: true });
+    expect((await t.run('assign_conversation', { target: 'Sales Agent' }))).toMatchObject({ ok: false, message: expect.stringContaining('yourself') });
+    expect((await t.run('assign_conversation', { target: 'Support Agent' }))).toMatchObject({ ok: true });
     expect(t.state.handler).toBe('ai');
   });
 
-  it('update_contact_field: numeric coercion, builtin fields, unknown field', () => {
+  it('update_contact_field: numeric coercion, builtin fields, unknown field', async () => {
     const t = sim();
-    expect(t.run('update_contact_field', { field: 'Budget', value: 'RM 5,000' }).ok).toBe(false);
-    expect(t.run('update_contact_field', { field: 'Budget', value: '5,000' }).ok).toBe(true);
+    expect((await t.run('update_contact_field', { field: 'Budget', value: 'RM 5,000' })).ok).toBe(false);
+    expect((await t.run('update_contact_field', { field: 'Budget', value: '5,000' })).ok).toBe(true);
     expect(t.state.contact.fields.Budget).toBe(5000);
-    expect(t.run('update_contact_field', { field: 'Location', value: 'Johor' }).ok).toBe(true);
-    expect(t.run('update_contact_field', { field: 'Email', value: 'a@b.my' }).ok).toBe(true);
+    expect((await t.run('update_contact_field', { field: 'Location', value: 'Johor' })).ok).toBe(true);
+    expect((await t.run('update_contact_field', { field: 'Email', value: 'a@b.my' })).ok).toBe(true);
     expect(t.state.contact.email).toBe('a@b.my');
-    expect(t.run('update_contact_field', { field: 'budget', value: '1' }).ok).toBe(false);
-    expect(t.run('update_contact_field', { field: 'Budget', value: '' }).ok).toBe(false);
+    expect((await t.run('update_contact_field', { field: 'budget', value: '1' })).ok).toBe(false);
+    expect((await t.run('update_contact_field', { field: 'Budget', value: '' })).ok).toBe(false);
   });
 
-  it('lifecycle, tags, close and comments reject names that are not in the workspace', () => {
+  it('lifecycle, tags, close and comments reject names that are not in the workspace', async () => {
     const t = sim();
-    expect(t.run('update_lifecycle_stage', { stage: 'Hot Lead' }).ok).toBe(true);
-    expect(t.run('update_lifecycle_stage', { stage: 'hot lead' })).toMatchObject({ ok: false, message: expect.stringContaining('Valid:') });
-    expect(t.run('update_tags', { add: ['Pricing', 'VIP'], remove: [] }).ok).toBe(true);
+    expect((await t.run('update_lifecycle_stage', { stage: 'Hot Lead' })).ok).toBe(true);
+    expect((await t.run('update_lifecycle_stage', { stage: 'hot lead' }))).toMatchObject({ ok: false, message: expect.stringContaining('Valid:') });
+    expect((await t.run('update_tags', { add: ['Pricing', 'VIP'], remove: [] })).ok).toBe(true);
     expect(t.state.contact.tags).toEqual(['Pricing', 'VIP']);
-    expect(t.run('update_tags', { remove: ['VIP'] }).ok).toBe(true);
+    expect((await t.run('update_tags', { remove: ['VIP'] })).ok).toBe(true);
     expect(t.state.contact.tags).toEqual(['Pricing']);
-    expect(t.run('update_tags', { add: ['Nope'] }).ok).toBe(false);
-    expect(t.run('update_tags', {}).ok).toBe(false);
-    expect(t.run('close_conversation', { closing_note: 'Whatever' }).ok).toBe(false);
-    expect(t.run('add_internal_comment', { text: 'handoff', mention: 'Sales Team' }).ok).toBe(false); // only users can be mentioned
-    expect(t.run('add_internal_comment', { text: 'handoff', mention: 'Aisyah' }).ok).toBe(true);
-    expect(t.run('add_internal_comment', { text: 'x'.repeat(2001) }).ok).toBe(false);
-    expect(t.run('close_conversation', { closing_note: 'Issue Resolved', summary: 'done' }).ok).toBe(true);
+    expect((await t.run('update_tags', { add: ['Nope'] })).ok).toBe(false);
+    expect((await t.run('update_tags', {})).ok).toBe(false);
+    expect((await t.run('close_conversation', { closing_note: 'Whatever' })).ok).toBe(false);
+    expect((await t.run('add_internal_comment', { text: 'handoff', mention: 'Sales Team' })).ok).toBe(false); // only users can be mentioned
+    expect((await t.run('add_internal_comment', { text: 'handoff', mention: 'Aisyah' })).ok).toBe(true);
+    expect((await t.run('add_internal_comment', { text: 'x'.repeat(2001) })).ok).toBe(false);
+    expect((await t.run('close_conversation', { closing_note: 'Issue Resolved', summary: 'done' })).ok).toBe(true);
     expect(t.state.status).toBe('closed');
-    expect(t.run('nonexistent_tool', {}).ok).toBe(false);
+    expect((await t.run('nonexistent_tool', {})).ok).toBe(false);
   });
 
-  it('disabled skills cannot be executed even if the model asks for them', () => {
+  it('disabled skills cannot be executed even if the model asks for them', async () => {
     const t = sim();
     const snap = allOn();
     snap.skills.close.enabled = false;
-    expect(executeTool('close_conversation', {}, t.env, snap)).toMatchObject({ ok: false, message: expect.stringContaining('disabled') });
+    expect(await executeTool('close_conversation', {}, t.env, snap)).toMatchObject({ ok: false, message: expect.stringContaining('disabled') });
   });
 });
 

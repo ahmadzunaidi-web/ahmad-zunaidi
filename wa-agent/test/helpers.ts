@@ -3,7 +3,9 @@ import { ScriptedProvider, type LlmRequest, type LlmResponse } from '../src/agen
 import type { Sender } from '../src/channels/whatsapp.js';
 import { loadConfig, type Config } from '../src/config.js';
 import { EventHub } from '../src/core/events.js';
+import { FollowUps } from '../src/core/followups.js';
 import { Pipeline } from '../src/core/pipeline.js';
+import { WorkflowEngine } from '../src/workflow/engine.js';
 import { openDb } from '../src/db.js';
 import { Knowledge } from '../src/knowledge/ingest.js';
 import { buildApp } from '../src/server.js';
@@ -13,6 +15,10 @@ import { loadWorkspace } from '../src/workspace.js';
 export class CaptureSender implements Sender {
   sent: { to: string; body: string }[] = [];
   failNext = false;
+  async sendInteractive(to: string, i: { body: string; choices: string[] }) {
+    this.sent.push({ to, body: `${i.body} [${i.choices.join(' | ')}]` });
+    return { id: `wamid.out.${this.sent.length}` };
+  }
   async sendText(to: string, body: string) {
     if (this.failNext) { this.failNext = false; throw new Error('graph api down'); }
     this.sent.push({ to, body });
@@ -30,10 +36,12 @@ export function setup(over: Partial<Config> = {}, fetchImpl?: typeof fetch) {
   const steps: ((req: LlmRequest) => LlmResponse)[] = [];
   const provider = new ScriptedProvider(steps);
   const workspace = loadWorkspace('config/workspace.json');
-  const pipeline = new Pipeline({ store, sender, hub, cfg, workspace, provider });
+  const pipeline = new Pipeline({ store, sender, hub, cfg, workspace, provider, fetchImpl });
   const knowledge = new Knowledge(store, fetchImpl);
-  const { app, drain } = buildApp({ cfg, store, pipeline, hub, workspace, knowledge, provider });
-  return { cfg, store, hub, sender, steps, provider, workspace, pipeline, knowledge, app, drain };
+  const engine = new WorkflowEngine(pipeline);
+  const followups = new FollowUps(pipeline);
+  const { app, drain } = buildApp({ cfg, store, pipeline, hub, workspace, knowledge, engine, provider, fetchImpl });
+  return { cfg, store, hub, sender, steps, provider, workspace, pipeline, knowledge, engine, followups, app, drain };
 }
 
 export type Ctx = ReturnType<typeof setup>;

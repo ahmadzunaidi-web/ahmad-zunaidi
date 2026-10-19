@@ -116,7 +116,7 @@ export async function runAgent(o: {
   maxIterations?: number;
 }): Promise<RunResult> {
   const { provider, snapshot, env } = o;
-  const tools = buildTools(snapshot, env.workspace, env.agents, env.selfName);
+  const tools = buildTools(snapshot, env);
   const system = buildSystem(snapshot, env, o.events, o.now ?? new Date());
   const messages = buildMessages(o.history);
   const result: RunResult = { reply: null, toolCalls: [], sources: [], usage: { input: 0, output: 0, cacheRead: 0 }, iterations: 0, stopReason: null };
@@ -139,7 +139,7 @@ export async function runAgent(o: {
       messages.push({ role: 'assistant', content: res.content });
       const results: LlmBlock[] = [];
       for (const u of uses) {
-        const r = executeTool(u.name, (u.input ?? {}) as Record<string, unknown>, env, snapshot);
+        const r = await executeTool(u.name, (u.input ?? {}) as Record<string, unknown>, env, snapshot);
         result.toolCalls.push({ name: u.name, input: u.input ?? {}, ok: r.ok, message: r.message });
         if (r.hits) result.sources.push(...r.hits);
         results.push({ type: 'tool_result', tool_use_id: u.id, content: r.message, ...(r.ok ? {} : { is_error: true }) });

@@ -4,15 +4,22 @@ import type {
   KnowledgeSource, Message, MessageSender, MessageStatus, SkillConfig, SkillKey,
 } from './types.js';
 import { HISTORY_WINDOW } from './types.js';
+import type { Graph, Trigger, WorkflowSettings, WorkflowRun, WorkflowRecord, RunStatus } from './workflow/types.js';
 
 type Param = string | number | null;
 type Row = Record<string, unknown>;
 
-export const SKILL_KEYS: SkillKey[] = ['assign', 'close', 'set_field', 'set_lifecycle', 'tags', 'comment'];
+export const SKILL_KEYS: SkillKey[] = ['assign', 'close', 'set_field', 'set_lifecycle', 'tags', 'comment', 'http', 'trigger_workflow', 'followup', 'attachment'];
 
 export function emptyDraft(model: string): AgentDraft {
   const skills = Object.fromEntries(SKILL_KEYS.map((k) => [k, { enabled: false, prompt: '' } satisfies SkillConfig])) as Record<SkillKey, SkillConfig>;
-  return { instructions: '', model, wait_seconds: 1, knowledge_ids: [], skills };
+  return { instructions: '', model, wait_seconds: 1, knowledge_ids: [], skills, http_actions: [] };
+}
+
+/** Fill in fields added after a draft/snapshot was stored (older rows stay valid). */
+export function normalizeDraft<T extends Partial<AgentDraft>>(d: T): T & AgentDraft {
+  const base = emptyDraft(d.model ?? '');
+  return { ...base, ...d, skills: { ...base.skills, ...(d.skills ?? {}) }, http_actions: d.http_actions ?? [] } as T & AgentDraft;
 }
 
 const now = () => Date.now();
@@ -162,7 +169,7 @@ export class Store {
 
   // ---- agents ---------------------------------------------------------------------------------
   private toAgent(r: Row): Agent {
-    return { ...(r as unknown as Agent), draft: json(r.draft, emptyDraft('')) };
+    return { ...(r as unknown as Agent), draft: normalizeDraft(json(r.draft, emptyDraft(''))) };
   }
   createAgent(name: string, emoji: string, description: string, draft: AgentDraft): Agent {
     const t = now();
@@ -199,7 +206,8 @@ export class Store {
     const a = this.getAgent(id);
     if (!a || a.status !== 'active' || a.published_version == null) return null;
     const r = this.get('SELECT snapshot FROM agent_version WHERE agent_id = ? AND version = ?', id, a.published_version);
-    return r ? json<AgentSnapshot | null>(r.snapshot, null) : null;
+    const snap = r ? json<AgentSnapshot | null>(r.snapshot, null) : null;
+    return snap ? normalizeDraft(snap) : null;
   }
   activeAgents(): Agent[] {
     return this.listAgents().filter((a) => a.status === 'active');
@@ -265,5 +273,191 @@ export class Store {
         WHERE chunk_fts MATCH ? AND f.source_id IN (${marks})
         ORDER BY bm25(chunk_fts) LIMIT ?`, match, ...sourceIds, limit);
     return rows as unknown as KnowledgeHit[];
+  }
+
+  // ---- workflows ------------------------------------------------------------------------------
+  private toWorkflow(r: Row): WorkflowRecord {
+    return {
+      ...(r as unknown as WorkflowRecord),
+      trigger: json<Trigger>(r.trigger, { type: 'manual' }),
+      graph: json<Graph>(r.graph, { start: null, steps: {} }),
+      settings: json<WorkflowSettings>(r.settings, {}),
+    };
+  }
+  createWorkflow(name: string, trigger: Trigger, graph: Graph, settings: WorkflowSettings, hookToken: string): WorkflowRecord {
+    const t = now();
+    const id = Number(this.run('INSERT INTO workflow (name, status, trigger, graph, settings, hook_token, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)',
+      name, 'draft', JSON.stringify(trigger), JSON.stringify(graph), JSON.stringify(settings), hookToken, t, t).lastInsertRowid);
+    return this.getWorkflow(id)!;
+  }
+  getWorkflow(id: number): WorkflowRecord | undefined {
+    const r = this.get('SELECT * FROM workflow WHERE id = ?', id);
+    return r ? this.toWorkflow(r) : undefined;
+  }
+  getWorkflowByName(name: string): WorkflowRecord | undefined {
+    const r = this.get('SELECT * FROM workflow WHERE name = ?', name);
+    return r ? this.toWorkflow(r) : undefined;
+  }
+  getWorkflowByToken(token: string): WorkflowRecord | undefined {
+    const r = this.get('SELECT * FROM workflow WHERE hook_token = ?', token);
+    return r ? this.toWorkflow(r) : undefined;
+  }
+  listWorkflows(): WorkflowRecord[] {
+    return this.all('SELECT * FROM workflow ORDER BY id').map((r) => this.toWorkflow(r));
+  }
+  publishedWorkflows(): WorkflowRecord[] {
+    return this.all("SELECT * FROM workflow WHERE status = 'published' ORDER BY id").map((r) => this.toWorkflow(r));
+  }
+  updateWorkflow(id: number, p: { name?: string; trigger?: Trigger; graph?: Graph; settings?: WorkflowSettings }): WorkflowRecord {
+    const w = this.getWorkflow(id)!;
+    this.run('UPDATE workflow SET name = ?, trigger = ?, graph = ?, settings = ?, updated_at = ? WHERE id = ?',
+      p.name ?? w.name, JSON.stringify(p.trigger ?? w.trigger), JSON.stringify(p.graph ?? w.graph), JSON.stringify(p.settings ?? w.settings), now(), id);
+    return this.getWorkflow(id)!;
+  }
+  setWorkflowStatus(id: number, status: 'draft' | 'published' | 'stopped'): WorkflowRecord {
+    this.run('UPDATE workflow SET status = ?, published_at = CASE WHEN ? = \'published\' THEN ? ELSE published_at END, updated_at = ? WHERE id = ?', status, status, now(), now(), id);
+    return this.getWorkflow(id)!;
+  }
+  deleteWorkflow(id: number): void {
+    this.run('DELETE FROM workflow_run WHERE workflow_id = ?', id);
+    this.run('DELETE FROM workflow WHERE id = ?', id);
+  }
+  countWorkflows(): number {
+    return Number(this.get('SELECT COUNT(*) AS n FROM workflow')!.n);
+  }
+
+  private toRun(r: Row): WorkflowRun {
+    return { ...(r as unknown as WorkflowRun), vars: json(r.vars, {}), trigger_vars: json(r.trigger_vars, {}), is_test: !!r.is_test };
+  }
+  createRun(workflowId: number, contactId: number, conversationId: number | null, stepId: string | null, triggerVars: Record<string, unknown>, isTest: boolean): WorkflowRun {
+    const t = now();
+    const id = Number(this.run('INSERT INTO workflow_run (workflow_id, contact_id, conversation_id, status, step_id, trigger_vars, is_test, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)',
+      workflowId, contactId, conversationId, 'running', stepId, JSON.stringify(triggerVars), isTest ? 1 : 0, t, t).lastInsertRowid);
+    return this.getRun(id)!;
+  }
+  getRun(id: number): WorkflowRun | undefined {
+    const r = this.get('SELECT * FROM workflow_run WHERE id = ?', id);
+    return r ? this.toRun(r) : undefined;
+  }
+  saveRun(r: WorkflowRun): void {
+    this.run('UPDATE workflow_run SET conversation_id = ?, status = ?, step_id = ?, wait_kind = ?, wait_until = ?, vars = ?, steps_run = ?, ended_reason = ?, updated_at = ? WHERE id = ?',
+      r.conversation_id, r.status, r.step_id, r.wait_kind, r.wait_until, JSON.stringify(r.vars), r.steps_run, r.ended_reason, now(), r.id);
+  }
+  activeRuns(opts: { workflowId?: number; contactId?: number } = {}): WorkflowRun[] {
+    const where = ["status IN ('running','waiting')"];
+    const p: Param[] = [];
+    if (opts.workflowId != null) { where.push('workflow_id = ?'); p.push(opts.workflowId); }
+    if (opts.contactId != null) { where.push('contact_id = ?'); p.push(opts.contactId); }
+    return this.all(`SELECT * FROM workflow_run WHERE ${where.join(' AND ')} ORDER BY id`, ...p).map((r) => this.toRun(r));
+  }
+  dueRuns(at: number): WorkflowRun[] {
+    return this.all("SELECT * FROM workflow_run WHERE status = 'waiting' AND wait_until IS NOT NULL AND wait_until <= ? ORDER BY wait_until", at).map((r) => this.toRun(r));
+  }
+  runsFor(workflowId: number, limit = 50): WorkflowRun[] {
+    return this.all('SELECT * FROM workflow_run WHERE workflow_id = ? ORDER BY id DESC LIMIT ?', workflowId, limit).map((r) => this.toRun(r));
+  }
+  recentRunCount(workflowId: number, contactId: number, since: number): number {
+    return Number(this.get('SELECT COUNT(*) AS n FROM workflow_run WHERE workflow_id = ? AND contact_id = ? AND created_at >= ?', workflowId, contactId, since)!.n);
+  }
+  endRunsFor(workflowId: number, reason: string, status: RunStatus = 'exited'): number {
+    return Number(this.run("UPDATE workflow_run SET status = ?, ended_reason = ?, wait_until = NULL, updated_at = ? WHERE workflow_id = ? AND status IN ('running','waiting')", status, reason, now(), workflowId).changes);
+  }
+
+  // ---- WhatsApp templates ---------------------------------------------------------------------
+  upsertTemplate(name: string, language: string, body: string): { id: number; name: string; language: string; body: string; params: number } {
+    const params = new Set([...body.matchAll(/\{\{(\d+)\}\}/g)].map((m) => Number(m[1]))).size;
+    this.run('INSERT INTO wa_template (name, language, body, params) VALUES (?,?,?,?) ON CONFLICT(name, language) DO UPDATE SET body = excluded.body, params = excluded.params', name, language, body, params);
+    return this.getTemplate(name, language)!;
+  }
+  getTemplate(name: string, language?: string): { id: number; name: string; language: string; body: string; params: number } | undefined {
+    const r = language
+      ? this.get('SELECT * FROM wa_template WHERE name = ? AND language = ?', name, language)
+      : this.get('SELECT * FROM wa_template WHERE name = ? ORDER BY id LIMIT 1', name);
+    return r as never;
+  }
+  listTemplates(): { id: number; name: string; language: string; body: string; params: number }[] {
+    return this.all('SELECT * FROM wa_template ORDER BY name, language') as never;
+  }
+  deleteTemplate(id: number): void {
+    this.run('DELETE FROM wa_template WHERE id = ?', id);
+  }
+
+  // ---- follow-ups -----------------------------------------------------------------------------
+  cancelFollowups(conversationId: number, reason = 'cancelled'): number {
+    return Number(this.run("UPDATE followup_job SET status = 'cancelled', error = ? WHERE conversation_id = ? AND status IN ('queued','pending')", reason, conversationId).changes);
+  }
+  addFollowups(conversationId: number, agentId: number, steps: { delay_minutes: number; message: string | null; template: string | null; params: string[]; actions: unknown[] }[]): void {
+    this.cancelFollowups(conversationId, 'replaced');
+    const t = now();
+    steps.forEach((st, i) => {
+      this.run('INSERT INTO followup_job (conversation_id, agent_id, seq, delay_minutes, run_at, message, template, params, actions, status, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+        conversationId, agentId, i, st.delay_minutes, i === 0 ? t + st.delay_minutes * 60_000 : null, st.message, st.template, JSON.stringify(st.params), JSON.stringify(st.actions), i === 0 ? 'pending' : 'queued', t);
+    });
+  }
+  dueFollowups(at: number): { id: number; conversation_id: number; agent_id: number; seq: number; message: string | null; template: string | null; params: string[]; actions: { tool: string; input: Record<string, unknown> }[] }[] {
+    return this.all("SELECT * FROM followup_job WHERE status = 'pending' AND run_at IS NOT NULL AND run_at <= ? ORDER BY run_at", at)
+      .map((r) => ({ ...(r as never as { id: number; conversation_id: number; agent_id: number; seq: number; message: string | null; template: string | null }), params: json(r.params, []), actions: json(r.actions, []) }));
+  }
+  finishFollowup(id: number, status: 'sent' | 'failed', error: string | null): void {
+    this.run('UPDATE followup_job SET status = ?, error = ? WHERE id = ?', status, error, id);
+  }
+  activateNextFollowup(conversationId: number, afterSeq: number): void {
+    const next = this.get("SELECT * FROM followup_job WHERE conversation_id = ? AND seq = ? AND status = 'queued'", conversationId, afterSeq + 1);
+    if (next) this.run("UPDATE followup_job SET status = 'pending', run_at = ? WHERE id = ?", now() + Number(next.delay_minutes) * 60_000, next.id as number);
+  }
+  followupsFor(conversationId: number): Row[] {
+    return this.all('SELECT * FROM followup_job WHERE conversation_id = ? ORDER BY id', conversationId);
+  }
+
+  // ---- misc queries ---------------------------------------------------------------------------
+  recentAgentRunCount(conversationId: number, since: number): number {
+    return Number(this.get('SELECT COUNT(*) AS n FROM agent_run WHERE conversation_id = ? AND created_at >= ? AND error IS NOT ?', conversationId, since, 'superseded by newer message')!.n);
+  }
+  knowledgeMentions(sourceIds: number[], needle: string): boolean {
+    if (!sourceIds.length) return false;
+    const marks = sourceIds.map(() => '?').join(',');
+    return !!this.get(`SELECT 1 AS x FROM knowledge_chunk WHERE source_id IN (${marks}) AND instr(text, ?) > 0 LIMIT 1`, ...sourceIds, needle);
+  }
+  contactByPhone(waId: string): Contact | undefined {
+    const r = this.get('SELECT * FROM contact WHERE wa_id = ?', waId);
+    return r ? this.toContact(r) : undefined;
+  }
+  openConversationsNeedingReply(since: number): Conversation[] {
+    return this.all(`SELECT c.* FROM conversation c WHERE c.status = 'open' AND c.handler = 'ai' AND c.agent_id IS NOT NULL
+      AND (SELECT direction FROM message m WHERE m.conversation_id = c.id ORDER BY m.id DESC LIMIT 1) = 'in'
+      AND (SELECT created_at FROM message m WHERE m.conversation_id = c.id ORDER BY m.id DESC LIMIT 1) >= ?`, since) as unknown as Conversation[];
+  }
+
+  metrics(since: number): Record<string, unknown> {
+    const n = (sql: string, ...p: Param[]) => Number(this.get(sql, ...p)!.n);
+    const rows = (sql: string, ...p: Param[]) => this.all(sql, ...p);
+    return {
+      conversations: {
+        total: n('SELECT COUNT(*) AS n FROM conversation'),
+        open: n("SELECT COUNT(*) AS n FROM conversation WHERE status = 'open'"),
+        closed: n("SELECT COUNT(*) AS n FROM conversation WHERE status = 'closed'"),
+        byHandler: rows("SELECT handler AS k, COUNT(*) AS v FROM conversation WHERE status = 'open' GROUP BY handler"),
+      },
+      contacts: { total: n('SELECT COUNT(*) AS n FROM contact'), byLifecycle: rows("SELECT COALESCE(lifecycle,'(none)') AS k, COUNT(*) AS v FROM contact GROUP BY lifecycle ORDER BY v DESC") },
+      messages: {
+        inbound: n("SELECT COUNT(*) AS n FROM message WHERE direction = 'in' AND created_at >= ?", since),
+        bySender: rows("SELECT sender AS k, COUNT(*) AS v FROM message WHERE direction = 'out' AND created_at >= ? GROUP BY sender", since),
+        failed: n("SELECT COUNT(*) AS n FROM message WHERE status = 'failed' AND created_at >= ?", since),
+        perDay: rows("SELECT strftime('%Y-%m-%d', created_at/1000, 'unixepoch') AS day, SUM(direction='in') AS inbound, SUM(direction='out') AS outbound FROM message WHERE created_at >= ? GROUP BY day ORDER BY day", since),
+      },
+      ai: {
+        runs: n('SELECT COUNT(*) AS n FROM agent_run WHERE created_at >= ?', since),
+        errors: n("SELECT COUNT(*) AS n FROM agent_run WHERE created_at >= ? AND error IS NOT NULL AND error != 'superseded by newer message'", since),
+        avgLatencyMs: Math.round(Number(this.get('SELECT COALESCE(AVG(latency_ms),0) AS n FROM agent_run WHERE created_at >= ?', since)!.n)),
+        inputTokens: n("SELECT COALESCE(SUM(json_extract(usage,'$.input')),0) AS n FROM agent_run WHERE created_at >= ?", since),
+        outputTokens: n("SELECT COALESCE(SUM(json_extract(usage,'$.output')),0) AS n FROM agent_run WHERE created_at >= ?", since),
+        byAgent: rows('SELECT a.name AS k, COUNT(*) AS v FROM agent_run r JOIN agent a ON a.id = r.agent_id WHERE r.created_at >= ? GROUP BY a.name ORDER BY v DESC', since),
+        followupsSent: n("SELECT COUNT(*) AS n FROM followup_job WHERE status = 'sent' AND created_at >= ?", since),
+      },
+      workflows: {
+        runs: n('SELECT COUNT(*) AS n FROM workflow_run WHERE created_at >= ?', since),
+        byStatus: rows('SELECT status AS k, COUNT(*) AS v FROM workflow_run WHERE created_at >= ? GROUP BY status', since),
+      },
+    };
   }
 }

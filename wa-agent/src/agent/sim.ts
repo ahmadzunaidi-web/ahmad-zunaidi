@@ -1,4 +1,4 @@
-import type { AgentEnv, AssignTarget, ConvState, Effects } from './skills.js';
+import type { AgentEnv, AssignTarget, ConvState, Effects, FollowupStep } from './skills.js';
 import type { KnowledgeHit } from '../types.js';
 import type { Workspace } from '../workspace.js';
 
@@ -46,12 +46,37 @@ export class SimEffects implements Effects {
     this.actions.push(`Internal comment${mention ? ` @${mention}` : ''}: ${text}`);
     return 'Internal comment added (simulated).';
   }
+  sendAttachment(url: string, kind: 'image' | 'document', caption: string | null): string {
+    this.actions.push(`Attachment (${kind}): ${url}${caption ? ` — ${caption}` : ''}`);
+    return `Attachment sent (simulated, ${kind}).`;
+  }
+  triggerWorkflow(workflowId: number, vars: Record<string, string>): string {
+    this.actions.push(`Workflow #${workflowId} would start${Object.keys(vars).length ? ` with ${JSON.stringify(vars)}` : ''}`);
+    return 'Workflow would start (simulated; the Test panel never runs workflows).';
+  }
+  scheduleFollowups(steps: FollowupStep[]): string {
+    this.actions.push(`Follow-ups: ${steps.map((s) => `+${s.after_minutes}m ${s.message ? `"${s.message.slice(0, 40)}"` : ''}${s.then.length ? ` then ${s.then.map((t) => t.tool).join('+')}` : ''}`).join(' → ')}`);
+    return 'Follow-ups scheduled (simulated; follow-ups cannot run in the Test panel).';
+  }
+  cancelFollowups(): string {
+    this.actions.push('Follow-ups cancelled');
+    return 'Pending follow-ups cancelled (simulated).';
+  }
 }
 
 export function simEnv(o: {
-  workspace: Workspace; state: ConvState; selfName: string; agents: { id: number; name: string }[];
+  workspace: Workspace; state: ConvState; selfName: string; selfId?: number; agents: { id: number; name: string }[];
   search: (q: string, ids: number[]) => KnowledgeHit[];
+  knowledgeMentions?: (ids: number[], needle: string) => boolean;
+  workflows?: AgentEnv['workflows']; templates?: AgentEnv['templates']; fetch?: typeof fetch;
 }): { env: AgentEnv; effects: SimEffects } {
   const effects = new SimEffects(o.state, o.workspace);
-  return { effects, env: { workspace: o.workspace, state: o.state, effects, agents: o.agents, selfName: o.selfName, searchKnowledge: o.search } };
+  return {
+    effects,
+    env: {
+      workspace: o.workspace, state: o.state, effects, agents: o.agents, selfName: o.selfName, selfId: o.selfId ?? 0, searchKnowledge: o.search,
+      knowledgeMentions: o.knowledgeMentions ?? (() => false), workflows: o.workflows ?? [], templates: o.templates ?? [],
+      fetch: o.fetch, runUrls: new Set<string>(), attachmentsSent: 0,
+    },
+  };
 }
