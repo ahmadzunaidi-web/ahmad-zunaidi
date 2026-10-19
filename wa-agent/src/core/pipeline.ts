@@ -1,7 +1,7 @@
 import type { Config } from '../config.js';
 import type { Sender, InboundMessage, StatusUpdate } from '../channels/whatsapp.js';
 import { interactiveKind, splitText } from '../channels/whatsapp.js';
-import type { LlmProvider } from '../agent/llm.js';
+import type { LlmBlock, LlmProvider } from '../agent/llm.js';
 import { runAgent, type HistoryMsg, type RunResult } from '../agent/runtime.js';
 import type { AgentEnv, AssignTarget, ConvState, Effects, FollowupStep } from '../agent/skills.js';
 import type { Store } from '../store.js';
@@ -9,6 +9,7 @@ import type { Conversation, Message, MessageSender } from '../types.js';
 import { teamOf, type Workspace } from '../workspace.js';
 import type { WorkflowEngine } from '../workflow/engine.js';
 import type { EventSource, WorkflowEvent } from '../workflow/types.js';
+import type { MediaService } from '../media/media.js';
 import type { FollowUps } from './followups.js';
 import type { EventHub } from './events.js';
 
@@ -36,6 +37,7 @@ const AI_RATE_WINDOW_MS = 3600_000;
 export class Pipeline {
   engine?: WorkflowEngine;
   followups?: FollowUps;
+  media?: MediaService;
   private pending = new Map<number, Pending>();
   private chains = new Map<number, Promise<void>>();
   private running = 0;
@@ -64,13 +66,21 @@ export class Pipeline {
       opened = true;
     }
     store.cancelFollowups(conv.id, 'contact replied');
-    store.insertMessage({ conversation_id: conv.id, direction: 'in', sender: 'contact', type: m.type, body: m.text, wa_message_id: m.waMessageId, status: 'received', created_at: m.timestamp });
+    const row = store.insertMessage({ conversation_id: conv.id, direction: 'in', sender: 'contact', type: m.type, body: m.text, wa_message_id: m.waMessageId, status: 'received', created_at: m.timestamp });
     conv = store.patchConversation(conv.id, { last_inbound_at: m.timestamp });
+    // media: download + validate (and transcribe voice notes) BEFORE anything reads the message, so a spoken
+    // answer to a workflow question or an AI turn sees the transcript
+    let text = m.text;
+    let answerText = m.text; // what a workflow question parses: the plain transcript, not the display prefix
+    if (m.media && this.media) {
+      const r = await this.media.ingest(row.id, m.media);
+      if (r.transcript) { text = `[Voice note] ${r.transcript}`; answerText = r.transcript; store.updateMessageBody(row.id, text); }
+    }
     hub.publish({ type: 'message', conversationId: conv.id });
     hub.publish({ type: 'conversation', conversationId: conv.id });
 
     // 1) a workflow waiting for an answer takes this message (and it must not start a new run)
-    if (this.engine && await this.engine.consumeAnswer(contact.id, m.text)) return;
+    if (this.engine && await this.engine.consumeAnswer(contact.id, answerText)) return;
     await this.engine?.noteIncoming(contact.id);
 
     // 2) triggers
@@ -80,7 +90,7 @@ export class Pipeline {
     // 3) route, unless a workflow is now talking to the contact
     conv = store.getConversation(conv.id)!;
     if (this.engine?.holdsConversation(contact.id)) return;
-    await this.route(conv, m);
+    await this.route(conv, { ...m, text });
   }
 
   private async route(conv: Conversation, m?: InboundMessage): Promise<void> {
@@ -363,8 +373,7 @@ export class Pipeline {
     }
     const inboundBefore = store.lastInboundMessageId(conversationId);
     const { env, effects } = this.makeEnv(conv, snap.name, snap.id, depth);
-    const history: HistoryMsg[] = store.recentMessages(conversationId)
-      .map((m) => ({ role: m.direction === 'in' ? 'user' : 'assistant', text: m.body }));
+    const history = this.historyFor(conversationId);
     const t0 = Date.now();
     let result: RunResult;
     try {
@@ -396,6 +405,23 @@ export class Pipeline {
         store.addComment(conversationId, snap.name, `⚠️ AI handoff chain stopped after ${MAX_HANDOFF_DEPTH} agents (possible loop). A human should take over.`);
       } else this.scheduleAgent(conversationId, 'assignment', 0, depth + 1);
     }
+  }
+
+  /** Last 20 messages as model turns; the 5 most recent images/PDFs the contact sent are attached as real content blocks. */
+  historyFor(conversationId: number): HistoryMsg[] {
+    const { store } = this.d;
+    const blocksByMsg = new Map<number, LlmBlock[]>();
+    let budget = 20 * 1024 * 1024;
+    for (const row of store.recentMediaForAi(conversationId)) {
+      const bytes = this.media?.readBytes(row);
+      if (!bytes) continue;
+      const isImage = row.kind === 'image';
+      if ((isImage && bytes.length > 5 * 1024 * 1024) || bytes.length > budget) continue; // too large for the model: the text placeholder remains
+      budget -= bytes.length;
+      const block: LlmBlock = { type: isImage ? 'image' : 'document', source: { type: 'base64', media_type: row.mime, data: bytes.toString('base64') } };
+      blocksByMsg.set(row.message_id, [...(blocksByMsg.get(row.message_id) ?? []), block]);
+    }
+    return store.recentMessages(conversationId).map((m) => ({ role: m.direction === 'in' ? 'user' as const : 'assistant' as const, text: m.body, ...(blocksByMsg.has(m.id) ? { blocks: blocksByMsg.get(m.id) } : {}) }));
   }
 
   /** After a restart: answer chats whose last message is a customer message that no AI run has handled yet. */

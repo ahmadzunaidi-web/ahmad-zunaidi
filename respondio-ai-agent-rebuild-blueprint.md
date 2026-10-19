@@ -336,8 +336,9 @@ Jangan reka harga/diskaun. Jangan janji tarikh penghantaran. Isu aduan → assig
 | 6 | Workflow engine MVP (ask/branch/wait/assign) | Menu + cabang AI fallback | 4–6 hari | ✅ |
 | 7 | Builder UI (prompt editor, workflow canvas, simulator) | Pengguna bukan-coder boleh konfigurasi | 5–8 hari | ✅ |
 | 8 | HTTP skill, template & 24h window, metrik | Siap produksi | 3–4 hari | ✅ |
+| 9 | Media masuk: muat turun + validasi, imej/PDF → Claude, transkripsi suara, retensi | AI "nampak" lampiran pelanggan | 2–3 hari | ✅ |
 
-Semua 8 milestone siap dalam [`wa-agent/`](wa-agent/README.md) (108 ujian lulus + ujian pelayar; belum diuji dengan WhatsApp/Claude sebenar — lihat "Known limits" dalam README). Panduan rebuild: [`docs/REBUILD-GUIDE.md`](docs/REBUILD-GUIDE.md). Raikan setiap tanda ✔ (log kemajuan dalam file ini).
+Semua 9 milestone siap dalam [`wa-agent/`](wa-agent/README.md) (120 ujian lulus + ujian pelayar; belum diuji dengan WhatsApp/Claude sebenar — lihat "Known limits" dalam README). Panduan rebuild: [`docs/REBUILD-GUIDE.md`](docs/REBUILD-GUIDE.md). Raikan setiap tanda ✔ (log kemajuan dalam file ini).
 
 ## 4. Semakan 4 Hukum
 1. **Jelas** – Satu rajah, jadual milestone dengan status nampak, nama kanonik dalam prompt.

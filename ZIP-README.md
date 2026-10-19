@@ -11,5 +11,5 @@ pelaksanaan penuhnya. **Mula di sini:**
 cd wa-agent && npm ci && npm test && npm run dev      # Node >= 22.13 ; http://localhost:3000
 ```
 
-Status jujur: 108 ujian automatik lulus + ujian pelayar; **belum diuji dengan WhatsApp/Claude sebenar**.
+Status jujur: 120 ujian automatik lulus + ujian pelayar; **belum diuji dengan WhatsApp/Claude sebenar**.
 Docs help respond.io tidak disertakan (hak cipta); sumber disenaraikan dalam blueprint §5.

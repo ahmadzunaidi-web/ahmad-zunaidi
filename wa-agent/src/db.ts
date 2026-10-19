@@ -148,6 +148,23 @@ CREATE TABLE IF NOT EXISTS wa_template (
   params INTEGER NOT NULL DEFAULT 0,
   UNIQUE (name, language)
 );
+CREATE TABLE IF NOT EXISTS media (
+  id INTEGER PRIMARY KEY,
+  message_id INTEGER NOT NULL REFERENCES message(id),
+  wa_media_id TEXT,
+  kind TEXT NOT NULL,
+  mime TEXT,
+  size INTEGER,
+  sha256 TEXT,
+  path TEXT,
+  status TEXT NOT NULL,
+  transcript TEXT,
+  caption TEXT,
+  filename TEXT,
+  error TEXT,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS media_msg ON media(message_id);
 CREATE TABLE IF NOT EXISTS followup_job (
   id INTEGER PRIMARY KEY,
   conversation_id INTEGER NOT NULL,

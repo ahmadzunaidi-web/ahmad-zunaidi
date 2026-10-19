@@ -30,15 +30,16 @@ export async function assertPublicUrl(raw: string): Promise<URL> {
 export interface FetchedPage { url: string; contentType: string; body: string }
 
 export interface SafeResponse { status: number; url: string; contentType: string; body: string; truncated: boolean }
+export interface SafeRawResponse { status: number; url: string; contentType: string; body: Buffer; truncated: boolean }
 
 /**
  * Public-web-only HTTP request: validates the host (and every redirect hop) against private ranges,
  * caps time and size. Used for knowledge crawling and the HTTP-request skill/step.
  */
-export async function safeRequest(raw: string, opts: {
+export async function safeRequestRaw(raw: string, opts: {
   method?: string; headers?: Record<string, string>; body?: string;
   maxBytes?: number; timeoutMs?: number; fetchImpl?: typeof fetch; truncate?: boolean;
-} = {}): Promise<SafeResponse> {
+} = {}): Promise<SafeRawResponse> {
   const maxBytes = opts.maxBytes ?? 2_000_000;
   const f = opts.fetchImpl ?? fetch;
   let url = (await assertPublicUrl(raw)).toString();
@@ -71,9 +72,14 @@ export async function safeRequest(raw: string, opts: {
         chunks.push(value);
       }
     }
-    return { status: res.status, url, contentType, body: Buffer.concat(chunks).toString('utf8'), truncated };
+    return { status: res.status, url, contentType, body: Buffer.concat(chunks), truncated };
   }
   throw new Error('Too many redirects');
+}
+
+export async function safeRequest(raw: string, opts: Parameters<typeof safeRequestRaw>[1] = {}): Promise<SafeResponse> {
+  const r = await safeRequestRaw(raw, opts);
+  return { ...r, body: r.body.toString('utf8') };
 }
 
 /** Fetch a text/HTML page for knowledge ingestion. */

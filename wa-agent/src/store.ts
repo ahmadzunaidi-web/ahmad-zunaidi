@@ -6,6 +6,10 @@ import type {
 import { HISTORY_WINDOW } from './types.js';
 import type { Graph, Trigger, WorkflowSettings, WorkflowRun, WorkflowRecord, RunStatus } from './workflow/types.js';
 
+export interface MediaRow {
+  id: number; message_id: number; wa_media_id: string | null; kind: string; mime: string | null; size: number | null; sha256: string | null;
+  path: string | null; status: 'stored' | 'failed' | 'skipped' | 'expired'; transcript: string | null; caption: string | null; filename: string | null; error: string | null; created_at: number;
+}
 type Param = string | number | null;
 type Row = Record<string, unknown>;
 
@@ -407,6 +411,44 @@ export class Store {
   }
   followupsFor(conversationId: number): Row[] {
     return this.all('SELECT * FROM followup_job WHERE conversation_id = ? ORDER BY id', conversationId);
+  }
+
+  // ---- media ----------------------------------------------------------------------------------
+  addMedia(m: { message_id: number; wa_media_id?: string | null; kind: string; mime?: string | null; size?: number | null; sha256?: string | null; path?: string | null; status: string; caption?: string | null; filename?: string | null; error?: string | null }): MediaRow {
+    const id = Number(this.run('INSERT INTO media (message_id, wa_media_id, kind, mime, size, sha256, path, status, caption, filename, error, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+      m.message_id, m.wa_media_id ?? null, m.kind, m.mime ?? null, m.size ?? null, m.sha256 ?? null, m.path ?? null, m.status, m.caption ?? null, m.filename ?? null, m.error ?? null, now()).lastInsertRowid);
+    return this.getMedia(id)!;
+  }
+  getMedia(id: number): MediaRow | undefined {
+    return this.get('SELECT * FROM media WHERE id = ?', id) as unknown as MediaRow | undefined;
+  }
+  updateMedia(id: number, p: Partial<Pick<MediaRow, 'status' | 'transcript' | 'error' | 'path'>>): void {
+    const cur = this.getMedia(id)!;
+    this.run('UPDATE media SET status = ?, transcript = ?, error = ?, path = ? WHERE id = ?',
+      p.status ?? cur.status, p.transcript === undefined ? cur.transcript : p.transcript, p.error === undefined ? cur.error : p.error, p.path === undefined ? cur.path : p.path, id);
+  }
+  updateMessageBody(id: number, body: string): void {
+    this.run('UPDATE message SET body = ? WHERE id = ?', body, id);
+  }
+  /** Media rows for a conversation (without file paths: those never leave the server). */
+  mediaForConversation(conversationId: number): Omit<MediaRow, 'path' | 'sha256'>[] {
+    return this.all('SELECT m.id, m.message_id, m.wa_media_id, m.kind, m.mime, m.size, m.status, m.transcript, m.caption, m.filename, m.error, m.created_at FROM media m JOIN message g ON g.id = m.message_id WHERE g.conversation_id = ? ORDER BY m.id', conversationId) as never;
+  }
+  /** The AI sees at most the 5 most recent stored files that sit inside its 20-message window. */
+  recentMediaForAi(conversationId: number, limit = 5): MediaRow[] {
+    const win = this.recentMessages(conversationId, HISTORY_WINDOW);
+    if (!win.length) return [];
+    const marks = win.map(() => '?').join(',');
+    return (this.all(`SELECT * FROM media WHERE message_id IN (${marks}) AND status = 'stored' AND path IS NOT NULL AND (kind = 'image' OR (kind = 'document' AND mime = 'application/pdf')) ORDER BY id DESC LIMIT ?`, ...win.map((m) => m.id), limit) as unknown as MediaRow[]).reverse();
+  }
+  expiredMedia(before: number): MediaRow[] {
+    return this.all("SELECT * FROM media WHERE created_at < ? AND status IN ('stored','failed','skipped')", before) as unknown as MediaRow[];
+  }
+  pathInUse(path: string, exceptId: number): boolean {
+    return !!this.get("SELECT 1 AS x FROM media WHERE path = ? AND id != ? AND status = 'stored'", path, exceptId);
+  }
+  mediaBySha(sha: string): MediaRow | undefined {
+    return this.get("SELECT * FROM media WHERE sha256 = ? AND status = 'stored' AND path IS NOT NULL LIMIT 1", sha) as unknown as MediaRow | undefined;
   }
 
   // ---- misc queries ---------------------------------------------------------------------------

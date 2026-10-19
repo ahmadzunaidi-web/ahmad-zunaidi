@@ -4,7 +4,7 @@ Dokumen ini menerangkan cara **membina semula** sistem chatbot WhatsApp + AI Age
 zip ini. Ia dibina secara *clean-room*: spesifikasi diambil daripada dokumentasi awam respond.io (help center,
 SDK/MCP/n8n rasmi) dan dibina semula sebagai kod sendiri. Tiada kod atau prompt proprietari disalin.
 
-> **Jujur dahulu:** kod diuji dengan 108 ujian automatik (WhatsApp & Claude dipalsukan/berskrip) dan ujian pelayar
+> **Jujur dahulu:** kod diuji dengan 120 ujian automatik (WhatsApp & Claude dipalsukan/berskrip) dan ujian pelayar
 > (Chromium). Ia **belum** dijalankan dengan nombor WhatsApp atau kunci Claude sebenar. Bahagian 7 menyenaraikan
 > perkara yang mesti disahkan sebelum guna dengan pelanggan sebenar.
 
@@ -27,7 +27,7 @@ build-zip.py                      ← menjana semula zip ini
 ```bash
 unzip wa-agent-complete.zip && cd wa-agent-complete/wa-agent     # Node >= 22.13
 npm ci
-npm test            # 108 ujian
+npm test            # 120 ujian
 npm run typecheck
 npm run dev         # http://localhost:3000  (tiada kunci pun jalan: simulator + model demo)
 ```
@@ -52,6 +52,7 @@ Meta WhatsApp Cloud API  │ Inbox · Ejen AI · Workflows (pembina) · Knowledg
  runAgent: prompt(platform+workspace+contact+events) + 20 mesej + tools
            tools = skills(assign, close, field, lifecycle, tags, comment, trigger_workflow,
                           follow-up, attachment, HTTP actions) + search_knowledge_base
+ MediaService (muat turun + validasi + transkripsi) berjalan SEBELUM routing; imej/PDF terkini → blok kandungan Claude
  Pipeline.send/sendChoices/sendTemplate/sendMedia → tetingkap 24 jam → Cloud API
  Timers (index.ts): WorkflowEngine.tick (5s) · FollowUps.tick (15s) · recover() semasa boot
  SQLite (node:sqlite, FTS5): contact, conversation, message, agent(+version), knowledge(+FTS),
@@ -71,6 +72,7 @@ Meta WhatsApp Cloud API  │ Inbox · Ejen AI · Workflows (pembina) · Knowledg
 | `src/core/followups.ts` | penjadual follow-up berterusan (≤5 langkah, ≤24j) |
 | `src/workflow/engine.ts` | interpreter workflow: trigger, 16 jenis langkah, pengesahan jawapan, timer, exit conditions |
 | `src/workflow/validate.ts` · `conditions.ts` · `template.ts` | validator graf, penilai syarat, `{{$contact.x}}` |
+| `src/media/media.ts` | muat turun media 2 langkah, semakan magic bytes, simpanan hash tersendiri, transkripsi (pilihan), tempoh simpan |
 | `src/knowledge/*` | chunking, crawler, **SSRF-safe fetch** (`safeRequest` dikongsi dengan HTTP skill) |
 | `src/store.ts` · `db.ts` | semua SQL; skema SQLite |
 | `src/server.ts` | semua laluan HTTP, auth admin, SSE, webhook masuk workflow |
@@ -90,6 +92,7 @@ urutan ini, dan jangan lompat fasa (setiap fasa bergantung pada yang sebelumnya)
 | 6 | workflow engine + trigger + exit conditions + timer | §1A-F | `test/m6-workflow.test.ts` |
 | 7 | Review prompt, pembina workflow (UI), metrik | §1A-F2, review | `test/m7-review.test.ts` + `scripts/ui-smoke.mjs` |
 | 8 | HTTP skill, trigger-workflow, follow-up, lampiran, template/interaktif, had kadar, recover | §1A-D,G,H | `test/m8-ops.test.ts` |
+| 9 | media masuk: muat turun, validasi, imej/PDF → Claude, transkripsi suara, retensi | §1A-C (mesej yang AI baca), §H | `test/m9-media.test.ts` |
 
 ### Prompt untuk ejen pengekodan (cth. Claude Code)
 
@@ -135,6 +138,7 @@ Pilihan kedua: **ubah suai** kod sedia ada — hampir semua tingkah laku tertump
 * **Rahsia HTTP** disembunyikan (`***`) dalam API; SSRF diblok pada setiap lompatan redirect.
 * **Tanya soalan tanpa cabang "tak sah":** kami minta semula (maks 3) sebelum keluar; respond.io hanya menamatkan.
 * **Perbualan ditutup semasa menunggu jawapan:** mesej pelanggan membuka semula perbualan (respond.io tidak).
+* **Media masuk:** imej/PDF disahkan dengan magic bytes dan dihantar kepada Claude sebagai blok sebenar (maks 5 terkini, tetingkap 20 mesej); audio perlu penyedia transkripsi luar kerana Claude tidak menerima audio; transkrip menjadi teks mesej supaya soalan workflow boleh dijawab dengan suara.
 * **Tiada status online/offline pengguna:** "hanya assign kepada pengguna online" tidak disokong; ada "kurang daripada N perbualan terbuka".
 
 ## 7. Senarai semak sebelum guna sebenar
@@ -145,11 +149,14 @@ Pilihan kedua: **ubah suai** kod sedia ada — hampir semua tingkah laku tertump
    sebagai secret; token URL webhook workflow ialah kelayakan — jangan kongsi.
 3. **Pematuhan:** opt-in WhatsApp, template diluluskan, PDPA (persetujuan, penyimpanan, hak padam).
 4. **Operasi:** sandaran fail SQLite (`DB_PATH`), satu instans sahaja (timer dalam proses), pantau tab Metrik (ralat AI, mesej gagal).
-5. **Had diketahui:** media masuk tidak dimuat turun; tiada panggilan suara, Google Sheets/CAPI; carian BM25 bukan embedding;
-   tiada PDF/DOCX parsing; satu workspace; satu `ADMIN_TOKEN`.
+5. **Privasi media:** `TRANSCRIBE_URL` menghantar audio kepada penyedia pihak ketiga yang anda pilih (mati secara lalai; pilih yang sesuai dengan
+   dasar privasi anda atau hos Whisper sendiri). Fail & transkrip dipadam selepas `MEDIA_RETENTION_DAYS` (lalai 30). Sahkan muat turun media dengan
+   nombor sebenar (URL Meta tamat dalam ~5 minit).
+6. **Had diketahui:** video, pelekat dan dokumen bukan-PDF tidak dimuat turun; tiada panggilan suara, Google Sheets/CAPI; carian BM25 bukan
+   embedding; tiada penghuraian DOCX; satu workspace; satu `ADMIN_TOKEN`.
 
 ## 8. Peta jalan cadangan
 
-Muat turun media masuk (+ transkripsi audio) · embedding/hybrid search · multi-pengguna & peranan · multi-workspace ·
+Video/dokumen lain & OCR · embedding/hybrid search · multi-pengguna & peranan · multi-workspace ·
 barisan kerja (BullMQ) + banyak instans · template disegerak daripada Graph API · kanvas workflow seret-lepas ·
 log event webhook & ujian beban.

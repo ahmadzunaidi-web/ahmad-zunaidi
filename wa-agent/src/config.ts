@@ -19,6 +19,15 @@ export interface Config {
   windowMs: number;
   /** Circuit breaker: max AI runs per conversation per hour. */
   aiMaxRunsPerHour: number;
+  /** Where inbound media is stored (private, never served from a public path). */
+  mediaDir: string;
+  mediaMaxBytes: number;
+  /** Media (and transcripts) older than this are deleted. 0 = keep forever. */
+  mediaRetentionDays: number;
+  /** Optional speech-to-text (OpenAI-compatible /audio/transcriptions). Audio is sent to this provider. */
+  transcribeUrl: string;
+  transcribeKey: string;
+  transcribeModel: string;
 }
 
 const bool = (v: string | undefined, d: boolean) => (v === undefined || v === '' ? d : /^(1|true|yes)$/i.test(v));
@@ -42,5 +51,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     defaultModel: env.AGENT_MODEL ?? 'claude-opus-5-5',
     windowMs: 24 * 60 * 60 * 1000,
     aiMaxRunsPerHour: Number(env.AI_MAX_RUNS_PER_HOUR ?? 40),
+    mediaDir: env.MEDIA_DIR ?? 'data/media',
+    mediaMaxBytes: Number(env.MEDIA_MAX_MB ?? 16) * 1024 * 1024,
+    mediaRetentionDays: Number(env.MEDIA_RETENTION_DAYS ?? 30),
+    transcribeUrl: env.TRANSCRIBE_URL ?? '',
+    transcribeKey: env.TRANSCRIBE_API_KEY ?? '',
+    transcribeModel: env.TRANSCRIBE_MODEL ?? 'whisper-1',
   };
 }

@@ -5,7 +5,11 @@ import { loadConfig, type Config } from '../src/config.js';
 import { EventHub } from '../src/core/events.js';
 import { FollowUps } from '../src/core/followups.js';
 import { Pipeline } from '../src/core/pipeline.js';
+import { MediaService } from '../src/media/media.js';
 import { WorkflowEngine } from '../src/workflow/engine.js';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { openDb } from '../src/db.js';
 import { Knowledge } from '../src/knowledge/ingest.js';
 import { buildApp } from '../src/server.js';
@@ -29,7 +33,7 @@ export class CaptureSender implements Sender {
 export const SECRET = 'app-secret';
 
 export function setup(over: Partial<Config> = {}, fetchImpl?: typeof fetch) {
-  const cfg: Config = { ...loadConfig({}), waAppSecret: SECRET, waVerifyToken: 'verify-me', echoFallback: true, devSimulator: true, adminToken: '', ...over };
+  const cfg: Config = { ...loadConfig({}), mediaDir: mkdtempSync(join(tmpdir(), 'wa-media-')), waAppSecret: SECRET, waVerifyToken: 'verify-me', echoFallback: true, devSimulator: true, adminToken: '', ...over };
   const store = new Store(openDb(':memory:'));
   const hub = new EventHub();
   const sender = new CaptureSender();
@@ -40,8 +44,10 @@ export function setup(over: Partial<Config> = {}, fetchImpl?: typeof fetch) {
   const knowledge = new Knowledge(store, fetchImpl);
   const engine = new WorkflowEngine(pipeline);
   const followups = new FollowUps(pipeline);
-  const { app, drain } = buildApp({ cfg, store, pipeline, hub, workspace, knowledge, engine, provider, fetchImpl });
-  return { cfg, store, hub, sender, steps, provider, workspace, pipeline, knowledge, engine, followups, app, drain };
+  const media = new MediaService({ store, cfg, fetchImpl });
+  pipeline.media = media;
+  const { app, drain } = buildApp({ cfg, store, pipeline, hub, workspace, knowledge, engine, media, provider, fetchImpl });
+  return { cfg, store, hub, sender, steps, provider, workspace, pipeline, knowledge, engine, followups, media, app, drain };
 }
 
 export type Ctx = ReturnType<typeof setup>;

@@ -22,6 +22,7 @@ import { newHookToken, triggerVarsFromBody, type WorkflowEngine } from './workfl
 import { LIMITS, type Graph, type Trigger, type WorkflowSettings } from './workflow/types.js';
 import { structuralIssues, validateGraph, validateTrigger } from './workflow/validate.js';
 import { normalizeDraft } from './store.js';
+import { baseMime, SERVABLE_MIMES, type MediaService } from './media/media.js';
 
 declare module 'fastify' {
   interface FastifyRequest { rawBody?: Buffer }
@@ -35,6 +36,7 @@ export interface AppDeps {
   workspace: Workspace;
   knowledge: Knowledge;
   engine: WorkflowEngine;
+  media: MediaService;
   provider: LlmProvider;
   /** Outbound HTTP for the HTTP skill/step (injectable for tests). */
   fetchImpl?: typeof fetch;
@@ -56,7 +58,7 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 export function buildApp(d: AppDeps): { app: FastifyInstance; drain: () => Promise<void> } {
-  const { cfg, store, pipeline, hub, workspace, knowledge, engine } = d;
+  const { cfg, store, pipeline, hub, workspace, knowledge, engine, media } = d;
   const app = Fastify({
     logger: process.env.NODE_ENV === 'test' || process.env.VITEST ? false : {
       level: 'info',
@@ -167,6 +169,7 @@ export function buildApp(d: AppDeps): { app: FastifyInstance; drain: () => Promi
       contact: store.getContact(conv.contact_id),
       messages: store.messages(conv.id),
       comments: store.comments(conv.id),
+      media: store.mediaForConversation(conv.id),
       events: store.events(conv.id),
       agent: conv.agent_id ? store.getAgent(conv.agent_id) : null,
     };
@@ -236,6 +239,38 @@ export function buildApp(d: AppDeps): { app: FastifyInstance; drain: () => Promi
     await pipeline.handleInbound({
       waMessageId: `sim.${Date.now()}.${Math.random().toString(36).slice(2, 8)}`,
       from, name: b.name?.trim() || null, timestamp: Date.now(), type: 'text', text,
+    });
+    const contact = store.upsertContact(from, null);
+    return { conversation: store.lastConversation(contact.id) };
+  });
+
+  // ---- media (private files; only types we validated on the way in are ever served) -------------
+  app.get('/api/media/:id', async (req, reply) => {
+    const row = store.getMedia(Number((req.params as { id: string }).id));
+    if (!row || row.status !== 'stored' || !SERVABLE_MIMES.has(baseMime(row.mime))) throw notFound();
+    const bytes = media.readBytes(row);
+    if (!bytes) throw notFound();
+    return reply
+      .header('content-type', baseMime(row.mime))
+      .header('x-content-type-options', 'nosniff')
+      .header('content-security-policy', "sandbox; default-src 'none'")
+      .header('content-disposition', `inline; filename="media-${row.id}.${row.path!.split('.').pop()}"`)
+      .header('cache-control', 'private, max-age=3600')
+      .send(bytes);
+  });
+
+  /** Dev: inject an inbound image/PDF/voice note without a WhatsApp number (bytes go through the real validation). */
+  app.post('/api/dev/simulate-media', { bodyLimit: 14 * 1024 * 1024 }, async (req) => {
+    if (!cfg.devSimulator) throw notFound();
+    const b = req.body as { from?: string; name?: string; kind?: 'image' | 'audio' | 'document'; mime?: string; data?: string; caption?: string };
+    const from = String(b.from ?? '').replace(/\D/g, '');
+    if (!from || !b.data || !['image', 'audio', 'document'].includes(String(b.kind))) throw bad('from, kind (image|audio|document) and data (base64) are required');
+    const bytes = Buffer.from(b.data, 'base64');
+    const kind = b.kind as 'image' | 'audio' | 'document';
+    const label = kind === 'image' ? '[Image]' : kind === 'audio' ? '[Audio message]' : '[Document]';
+    await pipeline.handleInbound({
+      waMessageId: `sim.${Date.now()}.${Math.random().toString(36).slice(2, 8)}`, from, name: b.name?.trim() || null, timestamp: Date.now(), type: kind,
+      text: `${label}${b.caption ? ' ' + b.caption : ''}`, media: { kind, id: 'sim', mime: String(b.mime ?? ''), caption: b.caption, bytes },
     });
     const contact = store.upsertContact(from, null);
     return { conversation: store.lastConversation(contact.id) };

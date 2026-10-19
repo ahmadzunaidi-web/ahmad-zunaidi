@@ -1,6 +1,17 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { Config } from '../config.js';
 
+export interface InboundMedia {
+  kind: 'image' | 'audio' | 'document' | 'video' | 'sticker';
+  /** WhatsApp media id (resolved to a short-lived URL via the Graph API). */
+  id: string;
+  mime: string;
+  caption?: string;
+  filename?: string;
+  /** Pre-fetched bytes (simulator/tests): skips the Graph API download. */
+  bytes?: Buffer;
+}
+
 export interface InboundMessage {
   waMessageId: string;
   from: string;
@@ -8,6 +19,7 @@ export interface InboundMessage {
   timestamp: number;
   type: string;
   text: string;
+  media?: InboundMedia;
   /** Click-to-WhatsApp ad referral, when the chat was started from an ad. */
   referral?: { sourceUrl: string; sourceId: string; sourceType: string; headline: string; body: string };
 }
@@ -65,12 +77,15 @@ export function parseWebhook(body: any): { messages: InboundMessage[]; statuses:
       for (const m of v.messages ?? []) {
         if (!m?.id || !m?.from) continue;
         const t = toText(m);
+        const kind = ['image', 'audio', 'document', 'video', 'sticker'].includes(m.type) ? (m.type as InboundMedia['kind']) : null;
+        const mm = kind ? m[kind] : null;
         messages.push({
           waMessageId: String(m.id),
           from: String(m.from),
           name: names.get(String(m.from)) || null,
           timestamp: Number(m.timestamp ?? 0) * 1000 || Date.now(),
           ...t,
+          ...(kind && mm?.id ? { media: { kind, id: String(mm.id), mime: String(mm.mime_type ?? ''), ...(mm.caption ? { caption: String(mm.caption) } : {}), ...(mm.filename ? { filename: String(mm.filename) } : {}) } } : {}),
           ...(m.referral ? { referral: {
             sourceUrl: String(m.referral.source_url ?? ''), sourceId: String(m.referral.source_id ?? ''), sourceType: String(m.referral.source_type ?? ''),
             headline: String(m.referral.headline ?? ''), body: String(m.referral.body ?? ''),

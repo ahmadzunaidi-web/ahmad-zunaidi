@@ -41,7 +41,7 @@ main{height:calc(100% - 53px)}
 .bubble{max-width:72%;padding:8px 11px;border-radius:12px;white-space:pre-wrap;word-break:break-word;border:1px solid var(--line)}
 .bubble.in{align-self:flex-start;background:var(--in)}
 .bubble.out{align-self:flex-end}
-.bubble.workflow{background:var(--warn-bg);border-color:transparent}.bubble.ai{background:var(--ai-bg);border-color:transparent}.bubble.human{background:var(--human-bg);border-color:transparent}.bubble.echo{background:var(--echo);border-color:transparent}
+.mimg{max-width:240px;max-height:240px;border-radius:8px;display:block;margin-top:6px}.mwarn{font-size:12px;color:var(--warn);margin-top:4px}.mtr{font-size:12px;font-style:italic;margin-top:4px;color:var(--muted)}audio{margin-top:6px;max-width:240px}.bubble.workflow{background:var(--warn-bg);border-color:transparent}.bubble.ai{background:var(--ai-bg);border-color:transparent}.bubble.human{background:var(--human-bg);border-color:transparent}.bubble.echo{background:var(--echo);border-color:transparent}
 .meta{font-size:11px;color:var(--muted);margin-top:3px}
 .note{align-self:center;background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:6px 10px;font-size:12px;max-width:80%;white-space:pre-wrap}
 .evt{align-self:center;font-size:11px;color:var(--muted)}
@@ -106,6 +106,7 @@ code{background:var(--echo);padding:1px 5px;border-radius:5px}
         <b>Simulator pelanggan</b> <small>(tanpa nombor WhatsApp)</small>
         <div class="row" style="margin-top:6px"><input id="sim-from" placeholder="No. telefon cth 60123456789" value="60123456789"><input id="sim-name" placeholder="Nama" value="Aina"></div>
         <div class="row"><input id="sim-text" placeholder="Mesej pelanggan…"><button class="primary" id="sim-send">Hantar</button></div>
+        <div class="row" style="margin-top:6px"><input type="file" id="sim-file" accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,audio/ogg,audio/mpeg,audio/mp4,audio/wav"><small>📎 imej / PDF / nota suara (teks = kapsyen)</small></div>
       </div>
       <div class="tabs-in"><button id="f-open" class="primary">Terbuka</button><button id="f-closed">Ditutup</button><button id="f-all">Semua</button></div>
       <div id="conv-list"></div>
@@ -231,6 +232,18 @@ async function openConv(id) {
   state.thread = await api('GET', '/api/conversations/' + id);
   renderThread();
 }
+function mediaHtml(m) {
+  const list = (state.thread?.media || []).filter((x) => x.message_id === m.id); if (!list.length) return '';
+  const tk = localStorage.getItem('wa_token'), q = tk ? '?token=' + encodeURIComponent(tk) : '';
+  return list.map((x) => {
+    const url = `/api/media/${x.id}${q}`;
+    if (x.status === 'expired') return '<div class="mwarn">Media telah tamat tempoh simpanan.</div>';
+    if (x.status !== 'stored') return `<div class="mwarn">⚠ Media tidak dimuat turun: ${esc(x.error || x.status)}</div>`;
+    if (x.kind === 'image') return `<a href="${url}" target="_blank"><img class="mimg" src="${url}" alt="imej"></a>`;
+    if (x.kind === 'audio') return `<audio controls preload="none" src="${url}"></audio>${x.transcript ? `<div class="mtr">“${esc(x.transcript)}”</div>` : x.error ? `<div class="mwarn">⚠ ${esc(x.error)}</div>` : '<div class="mtr">(tiada transkrip)</div>'}`;
+    return `<div style="margin-top:6px"><a href="${url}" target="_blank">📄 ${esc(x.filename || 'dokumen')}.pdf</a></div>`;
+  }).join('');
+}
 function tick(m) {
   if (m.direction === 'in') return '';
   if (m.status === 'failed') return `<span style="color:var(--bad)" title="${esc(m.error)}">⚠ gagal: ${esc(m.error || '')}</span>`;
@@ -249,7 +262,7 @@ function renderThread() {
     if (i.k === 'c') return `<div class="note">📝 <b>${esc(i.m.author)}</b>: ${esc(i.m.body)}</div>`;
     if (i.k === 'e') return `<div class="evt">${i.m.type === 'reopened' ? '↩ perbualan dibuka semula' : '➜ ditugaskan kepada AI oleh ' + esc(i.m.payload.by || '')}</div>`;
     const m = i.m;
-    return `<div class="bubble ${m.direction} ${m.sender}">${esc(m.body)}<div class="meta">${who[m.sender] ? esc(who[m.sender]) + ' · ' : ''}${new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ${tick(m)}</div></div>`;
+    return `<div class="bubble ${m.direction} ${m.sender}">${esc(m.body)}${mediaHtml(m)}<div class="meta">${who[m.sender] ? esc(who[m.sender]) + ' · ' : ''}${new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ${tick(m)}</div></div>`;
   }).join('');
   const aiHandling = c.handler === 'ai' && c.status === 'open';
   const ai = state.agents.filter((a) => a.status === 'active');
@@ -318,6 +331,17 @@ $('#sim-send').onclick = () => act(async () => {
   $('#sim-text').value = ''; await loadConvs(); await openConv(r.conversation.id);
 });
 $('#sim-text').onkeydown = (e) => { if (e.key === 'Enter') $('#sim-send').click(); };
+$('#sim-file').onchange = (e) => {
+  const f = e.target.files[0]; if (!f) return; e.target.value = '';
+  if (f.size > 9 * 1024 * 1024) return toast('⚠ Fail terlalu besar untuk simulator (maks 9MB)');
+  const kind = f.type.startsWith('image/') ? 'image' : f.type.startsWith('audio/') ? 'audio' : 'document';
+  const rd = new FileReader();
+  rd.onload = () => act(async () => {
+    const r = await api('POST', '/api/dev/simulate-media', { from: $('#sim-from').value, name: $('#sim-name').value, kind, mime: f.type, data: String(rd.result).split(',')[1], caption: $('#sim-text').value || undefined });
+    $('#sim-text').value = ''; await loadConvs(); await openConv(r.conversation.id);
+  });
+  rd.readAsDataURL(f);
+};
 
 // live updates
 function connectSSE() {
@@ -414,6 +438,7 @@ const MILESTONES = [
   ['Knowledge + RAG', 'Teks & URL (selamat SSRF), carian BM25, sumber dipilih per ejen, sumber dipaparkan semasa ujian.', true],
   ['Workflow engine', '11 trigger-jenis, 16 langkah, Ask a Question 9 jenis, Branch, Wait, Assign, Jump, HTTP, templat; menu → AI fallback; exit conditions.', true],
   ['Builder UI + Review + metrik', 'Pembina workflow bercabang, Review prompt dengan Apply fix, panel metrik.', true],
+  ['Media masuk + transkripsi suara', 'Imej/PDF disahkan (magic bytes) & dihantar kepada Claude; nota suara ditranskripsi; tempoh simpan automatik.', true],
   ['HTTP skill, template, follow-up, lampiran, pengerasan', 'SSRF-safe HTTP, Trigger Workflow, follow-up berterusan, butang/senarai interaktif, had kadar AI, pemulihan selepas restart.', true],
 ];
 function renderProgress() {

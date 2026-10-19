@@ -5,6 +5,7 @@ import { loadConfig } from './config.js';
 import { EventHub } from './core/events.js';
 import { FollowUps } from './core/followups.js';
 import { Pipeline } from './core/pipeline.js';
+import { MediaService } from './media/media.js';
 import { WorkflowEngine } from './workflow/engine.js';
 import { openDb } from './db.js';
 import { Knowledge } from './knowledge/ingest.js';
@@ -32,7 +33,9 @@ const pipeline = new Pipeline({ store, sender, hub, cfg, workspace, provider, lo
 const knowledge = new Knowledge(store);
 const engine = new WorkflowEngine(pipeline);
 const followups = new FollowUps(pipeline);
-const { app } = buildApp({ cfg, store, pipeline, hub, workspace, knowledge, engine, provider });
+const media = new MediaService({ store, cfg, log });
+pipeline.media = media;
+const { app } = buildApp({ cfg, store, pipeline, hub, workspace, knowledge, engine, media, provider });
 
 if (!waReady) log('WhatsApp credentials missing: outbound messages are logged (dry-run). Set WA_ACCESS_TOKEN and WA_PHONE_NUMBER_ID.');
 if (!cfg.waAppSecret && !cfg.allowUnsigned) log('WA_APP_SECRET not set: the webhook will reject requests. Use ALLOW_UNSIGNED=1 only for local testing.');
@@ -47,6 +50,10 @@ const timers = [
   setInterval(() => void engine.tick().catch((e) => log('workflow tick failed', (e as Error).message)), 5_000),
   setInterval(() => void followups.tick().catch((e) => log('follow-up tick failed', (e as Error).message)), 15_000),
 ];
+timers.push(setInterval(() => { try { media.cleanup(); } catch (e) { log('media cleanup failed', (e as Error).message); } }, 6 * 3600_000));
+const expired = media.cleanup();
+if (expired) log(`deleted ${expired} expired media file(s) (retention ${cfg.mediaRetentionDays} days)`);
+if (cfg.transcribeUrl) log(`voice notes are sent to ${new URL(cfg.transcribeUrl).host} for transcription`);
 const recovered = pipeline.recover();
 if (recovered) log(`recovered ${recovered} conversation(s) that were waiting for an AI reply`);
 
