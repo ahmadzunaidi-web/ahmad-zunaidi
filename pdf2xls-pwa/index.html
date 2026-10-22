@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PDF ke Excel</title>
+<meta name="theme-color" content="#0f766e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main>
+  <h1>📄 PDF → 📊 Excel</h1>
+  <p class="sub">Tukar jadual dalam PDF kepada fail .xlsx. Semua diproses dalam peranti anda — fail tidak dihantar ke mana-mana.</p>
+
+  <ol class="steps"><li id="s1" class="on">1 Pilih PDF</li><li id="s2">2 Tukar</li><li id="s3">3 Muat turun</li></ol>
+
+  <label id="drop" class="drop" tabindex="0">
+    <input id="file" type="file" accept="application/pdf" hidden>
+    <strong>Tekan di sini atau seret fail PDF</strong>
+    <span id="fname">Belum ada fail dipilih</span>
+  </label>
+
+  <fieldset class="opts">
+    <label><input type="radio" name="mode" value="sheets" checked> Satu sheet setiap halaman</label>
+    <label><input type="radio" name="mode" value="one"> Semua halaman dalam satu sheet</label>
+  </fieldset>
+
+  <button id="go" disabled>Tukar ke Excel</button>
+  <div class="bar" hidden><div id="fill"></div></div>
+  <p id="msg" role="status"></p>
+  <div id="preview"></div>
+  <a id="dl" class="btn" hidden>⬇ Muat turun .xlsx</a>
+
+  <section><h2>Sejarah (🎉 setiap kejayaan dikira)</h2><p id="count"></p><ul id="log"></ul></section>
+  <button id="install" hidden>Pasang aplikasi</button>
+  <p class="note">Nota: PDF imbasan (gambar) tiada teks, jadi tidak boleh ditukar tanpa OCR.</p>
+</main>
+<script src="lib/pdf.min.js"></script>
+<script src="lib/xlsx.full.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
