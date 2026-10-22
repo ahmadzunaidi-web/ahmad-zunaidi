@@ -64,6 +64,26 @@ function pageToRows(items) {
   });
 }
 
+let worker = null, workerLang = '';
+async function getWorker(lang) {
+  if (worker && workerLang === lang) return worker;
+  if (worker) await worker.terminate();
+  worker = await Tesseract.createWorker(lang, 1, {
+    workerPath: 'lib/ocr/worker.min.js', corePath: 'lib/ocr/', langPath: 'lib/ocr/',
+    logger: m => { if (m.status === 'recognizing text') $('msg').textContent = `OCR… ${Math.round(m.progress * 100)}%`; }
+  });
+  workerLang = lang; return worker;
+}
+// OCR satu halaman -> item bentuk pdf.js supaya boleh guna pageToRows
+async function ocrItems(page, lang) {
+  const vp = page.getViewport({ scale: 2.5 }), cv = document.createElement('canvas');
+  cv.width = vp.width; cv.height = vp.height;
+  await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+  const { data } = await (await getWorker(lang)).recognize(cv, {}, { blocks: true });
+  const words = (data.blocks || []).flatMap(b => b.paragraphs.flatMap(p => p.lines.flatMap(l => l.words)));
+  return words.filter(w => w.confidence > 30).map(w => ({ str: w.text, width: w.bbox.x1 - w.bbox.x0, transform: [0, 0, 0, w.bbox.y1 - w.bbox.y0, w.bbox.x0, vp.height - w.bbox.y1] }));
+}
+
 $('go').onclick = async () => {
   $('go').disabled = true; $('dl').hidden = true; document.querySelector('.bar').hidden = false;
   try {
@@ -71,13 +91,19 @@ $('go').onclick = async () => {
     const wb = XLSX.utils.book_new(), one = document.querySelector('[name=mode]:checked').value === 'one';
     let all = [], total = 0;
     for (let p = 1; p <= pdf.numPages; p++) {
-      const rows = pageToRows((await (await pdf.getPage(p)).getTextContent()).items);
+      const page = await pdf.getPage(p);
+      let items = (await page.getTextContent()).items;
+      if (items.filter(i => i.str.trim()).length < 5) {
+        $('msg').textContent = `Halaman ${p} ialah imbasan, menjalankan OCR (kali pertama agak lambat)…`;
+        items = await ocrItems(page, $('lang').value);
+      }
+      const rows = pageToRows(items);
       total += rows.length;
       if (one) all = all.concat(rows); else XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows.length ? rows : [['']]), 'Halaman ' + p);
       if (p === 1) preview(rows);
       $('fill').style.width = (p / pdf.numPages * 100) + '%'; $('msg').textContent = `Memproses halaman ${p}/${pdf.numPages}…`;
     }
-    if (!total) { $('msg').textContent = 'Tiada teks dijumpai. PDF ini mungkin imbasan (perlu OCR).'; $('go').disabled = false; return; }
+    if (!total) { $('msg').textContent = 'Tiada teks dijumpai walaupun selepas OCR. Cuba imbasan yang lebih jelas.'; $('go').disabled = false; return; }
     if (one) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(all), 'Data');
     const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
     if (blobUrl) URL.revokeObjectURL(blobUrl);
@@ -87,6 +113,7 @@ $('go').onclick = async () => {
     const h = hist(); h.push({ n: file.name, p: pdf.numPages, t: new Date().toLocaleString() });
     try { localStorage.setItem('p2x', JSON.stringify(h.slice(-50))); } catch {}
     renderHist();
+    if (worker) { await worker.terminate(); worker = null; }
   } catch (e) { $('msg').textContent = 'Gagal: ' + e.message; }
   $('go').disabled = false;
 };

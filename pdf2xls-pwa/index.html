@@ -26,6 +26,8 @@
   <fieldset class="opts">
     <label><input type="radio" name="mode" value="sheets" checked> Satu sheet setiap halaman</label>
     <label><input type="radio" name="mode" value="one"> Semua halaman dalam satu sheet</label>
+    <label>🔍 PDF imbasan (tiada teks) ditukar guna OCR automatik. Bahasa:
+      <select id="lang"><option value="eng+msa">Inggeris + Melayu</option><option value="eng">Inggeris</option><option value="msa">Melayu</option></select></label>
   </fieldset>
 
   <button id="go" disabled>Tukar ke Excel</button>
@@ -36,10 +38,11 @@
 
   <section><h2>Sejarah (🎉 setiap kejayaan dikira)</h2><p id="count"></p><ul id="log"></ul></section>
   <button id="install" hidden>Pasang aplikasi</button>
-  <p class="note">Nota: PDF imbasan (gambar) tiada teks, jadi tidak boleh ditukar tanpa OCR.</p>
+  <p class="note">Nota: OCR lebih perlahan dan kurang tepat daripada PDF bertext. Gunakan imbasan yang jelas dan lurus.</p>
 </main>
 <script src="lib/pdf.min.js"></script>
 <script src="lib/xlsx.full.min.js"></script>
+<script src="lib/ocr/tesseract.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
