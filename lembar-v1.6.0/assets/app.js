@@ -192,54 +192,56 @@ function entryCard(e) {
     <div class="row xs muted" style="margin-top:4px">${e.voice_path ? "Suara" : ""}${kind}</div></div></button>`;
 }
 const MILESTONES = [3, 7, 14, 30, 60];
-const TICK = '<span class="tick"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>';
-function weekDots() {
-  let h = "";
-  for (let i = 6; i >= 0; i--) { const d = addDays(S.today, -i); h += `<i class="${S.dates.has(d) ? "on" : ""} ${i === 0 ? "now" : ""}" title="${esc(fmtShort(d))}" aria-label="${esc(fmtShort(d))}${S.dates.has(d) ? " ada catatan" : ""}">${INIT[D(d).getUTCDay()]}</i>`; }
-  return `<div class="week-wrap" role="img" aria-label="Tujuh hari terakhir">${h}</div>`;
-}
+const PEN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l4-1 11-11a2.1 2.1 0 0 0-3-3L5 16l-1 4z"/><path d="M14 7l3 3"/></svg>';
+const MONS = ["JAN", "FEB", "MAC", "APR", "MEI", "JUN", "JUL", "OGO", "SEP", "OKT", "NOV", "DIS"];
 function greeting() {
   const hr = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kuala_Lumpur", hour: "numeric", hourCycle: "h23" }).format(new Date()));
   const g = hr < 12 ? "Selamat pagi" : hr < 15 ? "Selamat tengah hari" : hr < 19 ? "Selamat petang" : "Selamat malam";
   const nm = String(S.profile?.display_name || "").trim().split(/\s+/)[0];
   return nm && !nm.includes("@") ? `${g}, ${nm}` : g;
 }
-function progressCard(n, doneToday) {
-  const next = MILESTONES.find((m) => m > n) || n + 30, left = next - n, C = 263.89;
-  const nxtIdx = MILESTONES.findIndex((m) => m > n);
+function stampCard(n, doneToday) {
+  const SLOTS = 30, ms = new Set([3, 7, 14, 30]);
+  const filled = n === 0 ? 0 : ((n - 1) % SLOTS) + 1;
+  const next = MILESTONES.find((m) => m > filled) || 30, left = next - filled;
   const monthDays = [...S.dates.keys()].filter((d) => d.startsWith(S.today.slice(0, 7))).length;
   const total = [...S.dates.values()].reduce((a, b) => a + b.n, 0);
-  const head = n === 0 ? "Mulakan hari berturut-turut pertama" : doneToday ? `Tinggal ${left} hari ke pencapaian ${next} hari` : `Tulis hari ini untuk sambung ke hari ke-${n + 1}`;
-  const sub = n === 0 ? "Satu baris hari ini sudah cukup untuk bermula." : doneToday ? "Catatan hari ini sudah selesai." : "Rantaian awak masih hidup. Satu baris pun cukup.";
-  return `<section class="card progress" aria-label="Kemajuan awak">
-    <div class="pg-head"><div class="ring" role="img" aria-label="${n} hari berturut-turut"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="trk" cx="50" cy="50" r="42"/><circle class="val" cx="50" cy="50" r="42" stroke-dasharray="${C}" stroke-dashoffset="${(C * (1 - Math.min(1, n / next))).toFixed(1)}"/></svg><div class="ctr"><b class="num">${n}</b><span>hari</span></div></div>
-      <div class="pg-text"><h3>${esc(head)}</h3><span class="small muted">${esc(sub)}</span></div></div>
-    ${weekDots()}
-    <ul class="ladder" aria-label="Pencapaian hari berturut-turut">${MILESTONES.map((m, i) => `<li class="${n >= m ? "got" : i === nxtIdx ? "nxt" : ""}"><b>${m}</b>hari${n >= m ? '<span class="sr"> dicapai</span>' : ""}</li>`).join("")}</ul>
-    ${total ? `<div class="stats"><div><b class="num">${total}</b><span>catatan</span></div><div><b class="num">${S.dates.size}</b><span>hari menulis</span></div><div><b class="num">${monthDays}</b><span>hari bulan ini</span></div></div>` : ""}
+  const note = n === 0 ? "Tulis satu baris hari ini untuk dapat cop pertama." : doneToday ? (filled >= 30 ? "Kad penuh. Kad baharu bermula esok." : `Tinggal ${left} hari ke pencapaian ${next} hari.`) : `Tulis hari ini untuk sambung ke cop ke-${filled + 1}.`;
+  let slots = "";
+  for (let i = 1; i <= SLOTS; i++) slots += `<i class="slot${i <= filled ? " on" : ""}${ms.has(i) ? " ms" : ""}${i === filled ? " cur" : ""}">${ms.has(i) && i > filled ? i : ""}</i>`;
+  return `<section class="stampcard" aria-label="Kad cop kemajuan awak">
+    <div class="sc-head"><span class="t">Kad cop LEMBAR</span><span class="xs muted num">${filled} / ${SLOTS}</span></div>
+    <div class="sc-big"><b class="num">${n}</b><span>hari berturut-turut</span></div>
+    <p class="sc-next">${esc(note)}</p>
+    <div class="slots" role="img" aria-label="${filled} daripada ${SLOTS} cop pada kad ini">${slots}</div>
+    <p class="sc-key"><i></i>Bulatan merah ialah pencapaian: 3, 7, 14 dan 30 hari.</p>
+    ${total ? `<div class="sc-foot"><span><b>${total}</b> catatan</span><span><b>${S.dates.size}</b> hari menulis</span><span><b>${monthDays}</b> hari bulan ini</span></div>` : ""}
   </section>`;
 }
 function viewDiari() {
   const { n, doneToday } = streakInfo();
+  const td = D(S.today);
   const sub = !S.status ? "" : S.status.subscription.required && !S.status.subscription.active
     ? `<div class="card" style="border-color:var(--warn)"><b>Langganan tamat.</b> Data awak kekal boleh dibaca dan dieksport. <button class="btn sm soft" data-act="tab" data-tab="profil" style="margin-top:8px">Sambung RM2/bulan</button></div>` : "";
-  const next = doneToday
-    ? `<section class="next done" aria-labelledby="th"><span class="step">${TICK} Selesai hari ini</span><br>
-        <h2 id="th">Bagus. Catatan hari ini sudah disimpan.</h2>
-        <span class="copy"><p class="muted small">Awak boleh tambah lagi bila-bila masa.</p></span>
-        <div class="cta"><button class="btn" data-act="new" data-mode="write">+ Tambah lagi</button><button class="btn soft" data-act="new" data-mode="voice">Rakam</button></div></section>`
-    : `<section class="next" aria-labelledby="th"><span class="step">Langkah seterusnya</span><br>
-        <h2 id="th">Apa cerita hari ini?</h2>
-        <span class="copy"><p class="muted small">Satu baris pun cukup. Mula kecil sahaja.</p></span>
-        <div class="cta"><button class="btn lg" data-act="new" data-mode="write">+ Tulis satu baris</button><button class="btn soft lg" data-act="new" data-mode="voice">Rakam</button></div></section>`;
-  const quick = doneToday ? "" : `<section class="quick" aria-label="Mood pantas"><div class="small muted">Atau mulakan dengan mood awak (pilihan)</div>
-      <div class="moods" role="group" aria-label="Pilih mood">${MOODS.map(([v, l]) => `<button type="button" data-act="quickmood" data-v="${v}"><span class="mood-dot m${v}"></span>${l}</button>`).join("")}</div></section>`;
+  const page = doneToday
+    ? `<section class="sheetpage done" aria-labelledby="th"><span class="stamp">Selesai</span>
+        <h2 class="q" id="th">Bagus. Catatan hari ini sudah disimpan.</h2>
+        <p class="sub">Awak boleh tambah lagi bila-bila masa.</p>
+        <div class="alt"><button class="btn" data-act="new" data-mode="write">+ Tambah lagi</button><button class="btn soft" data-act="new" data-mode="voice">Rakam suara</button></div></section>`
+    : `<section class="sheetpage" aria-labelledby="th"><span class="tag hand">langkah seterusnya</span>
+        <h2 class="q" id="th">Apa cerita hari ini?</h2>
+        <p class="sub">Satu baris pun cukup. Mula kecil sahaja.</p>
+        <button class="writeline" data-act="new" data-mode="write" aria-label="Tulis satu baris"><span class="ph">Tulis satu baris</span><span class="pen">${PEN}</span></button>
+        <div class="alt"><button class="btn soft sm" data-act="new" data-mode="voice">Atau rakam suara</button></div></section>`;
+  const quick = doneToday ? "" : `<section class="quick" aria-label="Mood pantas"><span class="hand">bagaimana rasa awak? (pilihan)</span>
+      <div class="stickers" role="group" aria-label="Pilih mood">${MOODS.map(([v, l]) => `<button type="button" data-act="quickmood" data-v="${v}"><span class="dot m${v}"></span>${l}</button>`).join("")}</div></section>`;
   return `<div class="dash"><div class="topbar"><span class="brand">LEMBAR</span><button class="btn sm ghost" data-act="search" aria-expanded="${S.searchOpen}">Cari</button></div>
-  <div class="greet"><div class="eyebrow">${esc(fmtLong(S.today))}</div><h1>${esc(greeting())}</h1></div>
-  ${sub}${next}${quick}${progressCard(n, doneToday)}
+  <div class="dayhead"><div class="deskcal" aria-hidden="true"><span>${MONS[td.getUTCMonth()]}</span><b class="num">${td.getUTCDate()}</b></div>
+    <div><h1 class="hi hand" style="color:var(--ink);font-size:2rem">${esc(greeting())}</h1><div class="dd">${esc(fmtLong(S.today))}</div></div></div>
+  ${sub}${page}${quick}${stampCard(n, doneToday)}
   ${S.searchOpen ? `<div class="search"><label class="sr" for="q">Cari dalam diari</label><input id="q" type="search" placeholder="Cari tajuk atau isi…" value="${esc(S.q)}" autocomplete="off"></div>` : ""}
   <div class="sec-h"><h3>${S.q ? "Hasil carian" : "Terkini"}</h3></div>
-  <div class="stack">${S.recent.length ? S.recent.map(entryCard).join("") : `<div class="empty card">${S.q ? "Tiada padanan." : "Belum ada catatan. Tekan <b>+ Tulis satu baris</b> untuk bermula."}</div>`}</div></div>`;
+  <div class="stack" style="gap:0">${S.recent.length ? S.recent.map(entryCard).join("") : `<div class="empty card">${S.q ? "Tiada padanan." : "Belum ada catatan. Ketik garis di atas untuk bermula."}</div>`}</div></div>`;
 }
 
 // ---------------------------------------------------------------- KALENDAR

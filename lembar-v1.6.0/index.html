@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#1c6a5a"><link rel="icon" href="/assets/icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-192.png"><link rel="manifest" href="/manifest.webmanifest">
+<link rel="preload" href="/assets/fonts/display-800.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/hand.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/lembar.css">
+<title>LEMBAR — Diari harian dengan AI yang memahami manusia</title>
+<meta name="description" content="LEMBAR: diari harian RM2 sebulan. Tulis atau rakam suara. AI refleksi hanya bila awak minta, dengan kredit tanpa luput dan caj yang dipaparkan dahulu.">
+
+<meta property="og:title" content="LEMBAR — Diari harian dengan AI yang memahami manusia"><meta property="og:description" content="RM2 sebulan. AI hanya bila diminta. Kredit AI tanpa luput."><meta property="og:type" content="website">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="LEMBAR"><meta name="apple-mobile-web-app-status-bar-style" content="default">
+<script src="/assets/pwa.js" defer></script>
+</head>
+<body>
+<div class="land">
+
+<header class="nav">
+  <div class="w">
+    <a class="brand" href="/" aria-label="LEMBAR, halaman utama">LEMBAR</a>
+    <nav class="links" aria-label="Bahagian halaman"><a href="#cara">Cara mula</a><a href="#aliran">Diari &amp; AI</a><a href="#harga">Harga</a><a href="#soalan">Soalan lazim</a></nav>
+    <div class="row"><a class="btn ghost sm" href="/app/">Log masuk</a><a class="btn sm" href="/app/?intent=signup">Daftar</a></div>
+  </div>
+</header>
+
+<aside class="pwa-tools" aria-label="Pemasangan aplikasi">
+  <div class="row wrap"><button class="btn sm soft" type="button" data-pwa-install>Pasang app</button><button class="btn sm" type="button" data-pwa-update hidden>Kemas kini app</button></div><p class="xs muted" data-pwa-status role="status" aria-live="polite"></p>
+</aside>
+<dialog id="pwa-help"><div class="stack"><h2>Pasang LEMBAR</h2><p><b>Android:</b> buka laman ini dalam Chrome, kemudian pilih menu ⋮ → Pasang aplikasi atau Tambah ke skrin utama.</p><p><b>iPhone / iPad:</b> buka dalam Safari, tekan Kongsi → Tambah ke Skrin Utama → Tambah.</p><p class="small muted">Jika dibuka dalam WhatsApp atau Facebook, buka dahulu dalam pelayar biasa. Sambungan internet diperlukan untuk diari dan AI.</p><button class="btn" type="button" data-pwa-close>Faham</button></div></dialog>
+
+<main>
+  <div class="w"><div class="notice" role="note">LEMBAR sedang dalam persediaan pelancaran. Daftar atau log masuk menggunakan email dan kata laluan. Fungsi AI dan pembayaran bergantung pada ketersediaan perkhidmatan.</div></div>
+
+  <!-- HERO -->
+  <section class="w hero-l" aria-labelledby="h-hero">
+    <div>
+      <span class="hand kick">untuk awak yang selalu kata "nanti-nanti saja"</span>
+      <h1 id="h-hero">Satu baris sehari. Diari yang awak <span class="hl">betul-betul tulis.</span></h1>
+      <p class="lead">Tulis atau rakam suara. Kalendar, carian dan eksport sentiasa milik awak. AI hanya bila awak minta, dan awak nampak caj sebelum menekan hantar.</p>
+      <div class="acts"><a class="btn lg" href="/app/?intent=signup">Daftar dengan email</a><span class="hand scrawl" aria-hidden="true"><svg viewBox="0 0 46 30"><path d="M44 6C30 2 14 6 6 22M6 22l-1-10M6 22l10-3"/></svg>30 saat sahaja</span></div>
+      <div class="facts"><span class="chip">RM2 / bulan</span><span class="chip">Kredit AI tanpa luput</span><span class="chip warn">Foto: akan datang</span></div>
+      <p class="sub">Untuk pengguna 18 tahun ke atas. <a href="/app/">Sudah ada akaun? Log masuk</a></p>
+    </div>
+
+    <div class="mock" aria-hidden="true">
+      <span class="tape" style="left:40%;top:6px"></span>
+      <span class="stamp stampk">7 hari</span>
+      <div class="leaf">
+        <span class="date">Selasa, 27 Oktober</span>
+        <h2 class="ttl">Petang yang tenang</h2>
+        <span class="txt">Habis kerja awal hari ini. Duduk di beranda, minum teh, dengar hujan turun perlahan<span class="caret"></span></span>
+        <div class="stickers"><span><i class="dot m1"></i>Berat</span><span><i class="dot m2"></i>Penat</span><span><i class="dot m3"></i>Biasa</span><span class="pick"><i class="dot m4"></i>Baik</span><span><i class="dot m5"></i>Ceria</span></div>
+      </div>
+      <div class="note"><span class="who">LEMBAR</span>Mahu saya dengar dahulu, atau bantu susun fikiran?</div>
+    </div>
+  </section>
+
+  <!-- CARA MULA -->
+  <section class="sec" id="cara" aria-labelledby="h-cara">
+    <div class="w">
+      <div class="sec-t"><span class="hand">hari pertama</span><h2 id="h-cara">Mula dalam kurang satu minit.</h2><p>Tiada tetapan panjang. Tiada kewajipan menulis banyak.</p></div>
+      <div class="todo">
+        <h3>Hari pertama:</h3>
+        <ul>
+          <li><span class="bx"><svg viewBox="0 0 28 28"><path d="M5 15l6 6L24 5"/></svg></span><div><b>Daftar dengan email <span class="when">± 30 saat</span></b><small>Email dan kata laluan sahaja. Pemulihan kata laluan melalui email.</small></div></li>
+          <li><span class="bx"><svg viewBox="0 0 28 28"><path d="M5 15l6 6L24 5"/></svg></span><div><b>Tulis satu baris <span class="when">± 1 minit</span></b><small>Satu ayat pun dikira. Pilih mood kalau awak mahu, atau rakam suara jika menaip terasa berat.</small></div></li>
+          <li class="later"><span class="bx"></span><div><b>Esok: satu baris lagi <span class="when">setiap hari</span></b><small>Setiap catatan menambah satu cop pada kad awak. Pencapaian 3, 7, 14 dan 30 hari menanti.</small></div></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- DUA ALIRAN -->
+  <section class="sec" id="aliran" aria-labelledby="h-aliran">
+    <div class="w">
+      <div class="sec-t"><span class="hand">pilih sendiri</span><h2 id="h-aliran">Dua aliran. Awak yang pilih.</h2><p>Diari berfungsi sepenuhnya tanpa AI. AI hanya muncul apabila awak memanggilnya.</p></div>
+      <div class="flows">
+        <article class="flow ink">
+          <span class="tagh">sentiasa ada</span>
+          <h3>Diari tanpa AI</h3>
+          <p>Tulis bebas, bertarikh. Tiada apa dihantar ke mana-mana penyedia AI.</p>
+          <ul><li>Teks dan voice note (kuota wajar)</li><li>Kalendar, carian dan corak mood 30 hari</li><li>Eksport JSON dan Markdown bila-bila masa</li></ul>
+        </article>
+        <article class="flow ai">
+          <span class="tape"></span>
+          <h3>Refleksi AI</h3>
+          <p>Hanya selepas persetujuan jelas, dan hanya bila awak tekan hantar.</p>
+          <ul><li>Dengar sahaja, tanpa nasihat melainkan awak minta</li><li>Susun fikiran (CBT ringan) dan nilai &amp; tindakan</li><li>Refleksi mingguan dan surat kepada diri</li></ul>
+          <span class="only">pilihan, bukan kewajipan</span>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- KAD COP -->
+  <section class="sec" aria-labelledby="h-dash">
+    <div class="w show">
+      <div class="showcard" aria-hidden="true">
+        <span class="tape"></span>
+        <div class="stampcard">
+          <div class="sc-head"><span class="t">Kad cop LEMBAR</span><span class="xs muted num">Cop ke-9 daripada 30</span></div>
+          <div class="sc-big"><b class="num">9</b><span>hari berturut-turut</span></div>
+          <p class="sc-next">Tinggal 5 hari ke pencapaian 14 hari.</p>
+          <div class="slots"><i class="slot on"></i><i class="slot on"></i><i class="slot on ms"></i><i class="slot on"></i><i class="slot on"></i><i class="slot on"></i><i class="slot on ms"></i><i class="slot on"></i><i class="slot on cur"></i><i class="slot"></i><i class="slot"></i><i class="slot"></i><i class="slot"></i><i class="slot ms">14</i><i class="slot"></i><i class="slot"></i><i class="slot"></i><i class="slot"></i><i class="slot"></i><i class="slot"></i><i class="slot"></i><i class="slot"></i><i class="slot"></i><i class="slot"></i><i class="slot"></i><i class="slot"></i><i class="slot"></i><i class="slot"></i><i class="slot"></i><i class="slot ms">30</i></div>
+          <p class="sc-key"><i></i>Bulatan merah ialah pencapaian: 3, 7, 14 dan 30 hari.</p>
+        </div>
+      </div>
+      <div>
+        <div class="sec-t" style="margin-bottom:22px"><span class="hand">papan pemuka</span><h2 id="h-dash">Sentiasa jelas apa yang perlu dibuat seterusnya.</h2></div>
+        <div class="runin">
+          <p><b>Satu langkah di hadapan</b>Buka app dan terus nampak garis untuk menulis. Tiada menu untuk dicari.</p>
+          <p><b>Mood dengan satu sentuhan</b>Pilih pelekat mood, kemudian tulis satu ayat. Selebihnya boleh menunggu.</p>
+          <p><b>Setiap hari dapat cop</b>Hari berturut-turut, pencapaian dan corak mood 30 hari dipaparkan. Hanya mood yang awak pilih sendiri, bukan skor klinikal.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PERATURAN BUKU -->
+  <section class="sec" aria-labelledby="h-care">
+    <div class="w rules">
+      <div class="pasted"><span class="tape"></span><span class="hand">Peraturan buku ini</span><p>Sokongan kesejahteraan dan refleksi, bukan rawatan, bukan perkhidmatan krisis 24/7.</p></div>
+      <div>
+        <div class="sec-t" style="margin-bottom:18px"><span class="hand">keselamatan</span><h2 id="h-care">AI yang berhati-hati.</h2></div>
+        <ul>
+          <li>Tidak mendiagnosis dan tidak melabel awak.</li>
+          <li>Meminta izin sebelum memberi pandangan. Tidak memaksa positiviti.</li>
+          <li>Jika tanda bahaya dikesan, bantuan manusia dan nombor kecemasan diutamakan dan <b>tiada kredit ditolak</b>.</li>
+          <li>Memori AI hanya fakta yang awak luluskan; boleh disemak dan dipadam.</li>
+          <li>Tiada iklan berdasarkan kandungan diari. Kami tidak menggunakan teks awak untuk melatih model sendiri.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- HARGA -->
+  <section class="sec" id="harga" aria-labelledby="h-harga">
+    <div class="w">
+      <div class="sec-t"><span class="hand">resit</span><h2 id="h-harga">Harga yang jelas.</h2></div>
+      <div class="prices">
+        <article class="ticket main"><div class="lbl">Platform</div><div class="amt">RM2 <small>/ bulan</small></div><p>Diari asas, kalendar, teks, voice note (kuota wajar), carian dan eksport.</p><a class="btn" href="/app/?intent=signup">Daftar dengan email</a></article>
+        <article class="ticket alt"><div class="lbl">Kredit AI</div><div class="amt">Ikut penggunaan</div><p>Caj dipaparkan sebelum guna AI. <b>Baki tidak luput.</b></p><div class="tops" aria-label="Pilihan top-up"><span>RM5</span><span>RM10</span><span>RM20</span></div></article>
+      </div>
+      <p class="pricenote">Jika langganan tamat, data awak kekal boleh dibaca dan dieksport, baki kredit kekal, dan penggunaan AI dibuka semula apabila langganan aktif.</p>
+    </div>
+  </section>
+
+  <!-- SOALAN LAZIM -->
+  <section class="sec" id="soalan" aria-labelledby="h-faq">
+    <div class="w">
+      <div class="sec-t"><span class="hand">soalan lazim</span><h2 id="h-faq">Sebelum awak mula.</h2></div>
+      <div class="faq">
+        <details><summary>Siapa boleh membaca diari saya?</summary><p class="muted">Pengguna lain tidak boleh membaca diari awak. Akses akaun diasingkan di pangkalan data dan rakaman suara disimpan dalam storan peribadi. Butiran akses operasi diterangkan dalam Polisi Privasi.</p></details>
+        <details><summary>Bila teks saya dihantar kepada AI?</summary><p class="muted">Hanya apabila awak menekan Hantar dalam tab AI, selepas awak melihat caj maksimum. Tiada analisis automatik.</p></details>
+        <details><summary>Adakah kredit AI akan luput?</summary><p class="muted">Tidak. Kredit yang dibeli kekal sehingga digunakan.</p></details>
+        <details><summary>Boleh muat naik foto?</summary><p class="muted">Belum. Foto ditandakan <b>Akan Datang</b>; tulisan dan rakaman suara sudah boleh digunakan.</p></details>
+        <details><summary>Adakah ini terapi?</summary><p class="muted">Tidak. LEMBAR ialah alat refleksi dan kesejahteraan. Jika awak berasa sangat tertekan atau terfikir untuk mencederakan diri, hubungi 999, Befrienders KL 03-7627 2929 (24 jam) atau Talian Kasih 15999.</p></details>
+        <details><summary>Untuk siapa?</summary><p class="muted">Pengguna berumur 18 tahun ke atas pada fasa awal.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <!-- PENUTUP -->
+  <div class="w">
+    <section class="endsheet" aria-labelledby="h-end">
+      <span class="tape"></span>
+      <h2 id="h-end">Tulis <span class="hl">baris pertama</span> awak hari ini.</h2>
+      <p>Daftar dengan email, tulis satu ayat, dan cop pertama awak sudah di tangan.</p>
+      <a class="btn lg" href="/app/?intent=signup">Daftar dengan email</a>
+    </section>
+  </div>
+</main>
+
+<footer class="foot"><div class="w">LEMBAR oleh Bijak Belanja · <a href="/privasi/">Privasi</a> · <a href="/terma/">Terma</a> · <a href="https://bijakbelanja.com/" rel="noopener">bijakbelanja.com</a></div></footer>
+</div>
+</body>
+</html>

@@ -1,6 +1,6 @@
 /* LEMBAR PWA: cache public offline assets only, never journal/auth/API responses. */
-const CACHE = 'lembar-public-v1.5.0-redesign';
-const PUBLIC_ASSETS = ['/offline.html', '/assets/lembar.css', '/assets/pwa.js', '/assets/fonts/display-700.woff2', '/assets/fonts/display-800.woff2', '/assets/fonts/body-400.woff2', '/assets/fonts/body-600.woff2', '/assets/fonts/body-700.woff2', '/assets/icon.svg', '/assets/icon-192.png', '/assets/icon-512.png', '/manifest.webmanifest'];
+const CACHE = 'lembar-public-v1.6.0-notebook';
+const PUBLIC_ASSETS = ['/offline.html', '/assets/lembar.css', '/assets/pwa.js', '/assets/fonts/display-700.woff2', '/assets/fonts/display-800.woff2', '/assets/fonts/body-400.woff2', '/assets/fonts/body-600.woff2', '/assets/fonts/body-700.woff2', '/assets/fonts/hand.woff2', '/assets/icon.svg', '/assets/icon-192.png', '/assets/icon-512.png', '/manifest.webmanifest'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(PUBLIC_ASSETS.map(url => new Request(url, {cache: 'reload'})))));
 });
