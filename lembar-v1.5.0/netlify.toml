@@ -1,0 +1,4 @@
+# Prebuilt static LEMBAR frontend. No Hugo, npm or framework build required.
+[build]
+  command = "true"
+  publish = "."

@@ -1,0 +1,10 @@
+/api/lembar-api https://jboydowyvtyuiygfwsdo.supabase.co/functions/v1/lembar-api 200!
+/api/lembar-checkout https://jboydowyvtyuiygfwsdo.supabase.co/functions/v1/lembar-checkout 200!
+/lembar / 301!
+/lembar/* /:splat 301!
+/supabase/* /404.html 404!
+/docs/* /404.html 404!
+/tests/* /404.html 404!
+/_headers /404.html 404!
+/_redirects /404.html 404!
+/netlify.toml /404.html 404!

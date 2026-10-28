@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#1c6a5a"><link rel="icon" href="/assets/icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="/assets/icon-192.png"><link rel="manifest" href="/manifest.webmanifest"><link rel="stylesheet" href="/assets/lembar.css">
+<title>LEMBAR — Diari Saya</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="LEMBAR"><meta name="apple-mobile-web-app-status-bar-style" content="default">
+<script src="/assets/pwa.js" defer></script>
+</head>
+<body>
+<a class="sr" href="#view">Langkau ke kandungan</a>
+<aside class="pwa-tools" aria-label="Pemasangan aplikasi">
+<div class="row wrap"><button class="btn sm soft" type="button" data-pwa-install>Pasang app</button><button class="btn sm" type="button" data-pwa-update hidden>Kemas kini app</button></div><p class="xs muted" data-pwa-status role="status" aria-live="polite"></p>
+</aside>
+<dialog id="pwa-help"><div class="stack"><h2>Pasang LEMBAR</h2><p><b>Android:</b> buka laman ini dalam Chrome, kemudian pilih menu ⋮ → Pasang aplikasi atau Tambah ke skrin utama.</p><p><b>iPhone / iPad:</b> buka dalam Safari, tekan Kongsi → Tambah ke Skrin Utama → Tambah.</p><p class="small muted">Jika dibuka dalam WhatsApp atau Facebook, buka dahulu dalam pelayar biasa. Sambungan internet diperlukan untuk diari dan AI.</p><button class="btn" type="button" data-pwa-close>Faham</button></div></dialog>
+<div id="login" hidden></div>
+<div id="shell">
+  <main class="app" id="view" tabindex="-1"><div class="empty">Memuatkan…</div></main>
+  <div class="tabs" id="tabs"></div>
+</div>
+<div class="sheet" id="editor" role="dialog" aria-modal="true" aria-label="Penyunting catatan"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<noscript><p style="padding:24px">LEMBAR memerlukan JavaScript.</p></noscript>
+<script type="module" src="/assets/app.js"></script>
+</body>
+</html>

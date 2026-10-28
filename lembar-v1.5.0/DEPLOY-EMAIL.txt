@@ -1,0 +1,17 @@
+LEMBAR v1.4.7 — Email Login
+
+Deploy: upload ZIP ini ke projek Netlify LEMBAR sedia ada. ZIP mengandungi index.html di root dan tidak memerlukan npm/build.
+
+Perubahan: pilihan Google dibuang daripada frontend; daftar dan log masuk menggunakan email + kata laluan; pengesahan kata laluan semasa daftar; pemulihan kata laluan melalui email; cache PWA dinaikkan ke v1.4.7-email. Backend, data diari dan peraturan akses owner tidak diubah.
+
+Akaun owner sedia ada sudah mempunyai kata laluan. Gunakan Log masuk, bukan Daftar, untuk akaun itu. Tiada password disimpan dalam pakej.
+
+Semakan backend read-only: email provider ON, signup dibenarkan, email autoconfirm ON. Tiada tetapan keselamatan diubah.
+
+Pemulihan kata laluan: penghantaran email bergantung pada SMTP dan had backend sedia ada. URL https://DOMAIN-LEMBAR/auth/callback/?mode=recovery dan https://DOMAIN-LEMBAR/auth/callback/ perlu berada dalam Supabase Authentication > URL Configuration > Redirect URLs. Senarai URL ini belum boleh disahkan melalui akses tersedia. Daftar/log masuk biasa tidak bergantung pada Google OAuth atau redirect kerana backend sekarang mengesahkan pendaftaran secara automatik.
+
+Validasi: semua fail JavaScript aplikasi lulus semakan sintaks; ujian simulasi API dan borang lulus (login, signup, mismatch, ralat credential, rate limit, reset, duplicate submit). Tiada akaun ujian production dicipta, email ujian dihantar atau login pengguna sebenar dijalankan. Belum di-deploy dari sesi ini.
+
+Kemas kini v1.4.7: paparan formula kos dibuang dari sales page, terma, profil dan anggaran AI. Pilihan top-up, maksimum caj, caj sebenar dan rekod penggunaan kekal. Tiada kod pengiraan caj atau backend diubah.
+
+Kemas kini v1.5.0 (reka bentuk semula): halaman jualan dan dashboard diubah suai dengan konsep "helaian bergaris". Dashboard baharu: kad Langkah seterusnya, mood pantas, cincin kemajuan hari berturut-turut, tangga pencapaian 3/7/14/30/60 hari, statistik ringkas dan carta mood 30 hari yang boleh disentuh serta ada paparan jadual. Fon Bricolage Grotesque dan Instrument Sans dihoskan sendiri di /assets/fonts (selaras CSP font-src 'self'). Cache PWA dinaikkan ke v1.5.0-redesign. Backend, caj, data diari, config.json dan peraturan akses tidak diubah.
