@@ -1,0 +1,4 @@
+/migrations/* /404.html 404!
+/backend/* /404.html 404!
+/audit/* /404.html 404!
+/* /index.html 200
