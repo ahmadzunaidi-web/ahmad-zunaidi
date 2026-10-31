@@ -1,7 +1,7 @@
 # Alphard SC Delivery: Ir Faizal (Putrajaya)
 
 **Format:** 1080×1920 (9:16), 30 fps, **33.5 s**. Tiada suara asal, tiada muzik, hanya SFX.
-**Status:** PREVIEW (draf). Final belum dirender.
+**Status:** FINAL dirender (diluluskan: "Selamat jalan!", Sinar Group, 33.5 s).
 
 ---
 
@@ -47,8 +47,8 @@ Mula dengan **lampu depan Alphard menyala** (c08) bersama teks besar **"ALPHARD 
 | S10 | 20.6–22.4 | c06 (1.4) | Tinjau kabin | — | — |
 | S11 | 22.4–24.8 | c07 (0.3) | Anak-anak dalam kabin | Kad emas "KABIN VIP · Penumpang pertama!" | pop @22.62 |
 | S12 | 24.8–27.6 | c13 (0.3) | Tracking kereta keluar | — | whoosh @24.74 |
-| S13 | 27.6–29.2 | c13 (8.0) | Lambai dari tingkap | "Jom, balik!" | riser mula @26.53 |
-| S14 | 29.2–33.5 | c13 (11.7) @0.72× slow-mo | Pandu pergi ke malam | **END CARD** @30.0: TAHNIAH IR FAIZAL | impact-bass @29.96, sparkle @30.38 |
+| S13 | 27.6–29.2 | c13 (8.0) | Lambai dari tingkap | "Selamat jalan!" | riser mula @26.53 |
+| S14 | 29.2–33.5 | c13 (11.7) @0.72× slow-mo | Pandu pergi ke malam | **END CARD** @30.0: TAHNIAH IR FAIZAL + "Diserahkan oleh SINAR GROUP" @31.1 | impact-bass @29.96, sparkle @30.38, pop @31.12 |
 
 Setiap shot ada **slow push-in / pull-back** (1.00→1.08) supaya tidak statik.
 
