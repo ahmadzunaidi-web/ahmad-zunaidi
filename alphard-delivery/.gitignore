@@ -1,0 +1,8 @@
+node_modules/
+.raw/
+.hyperframes/
+assets/footage/
+assets/img/
+preview/
+out/
+*.mp4

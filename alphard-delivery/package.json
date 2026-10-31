@@ -1,0 +1,20 @@
+{
+  "name": "alphard-delivery",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "prep": "bash scripts/prep-media.sh",
+    "dev": "hyperframes preview",
+    "check": "hyperframes check",
+    "preview": "hyperframes render -q draft -o preview/alphard-delivery-PREVIEW.mp4",
+    "render": "hyperframes render -q delivery -o out/alphard-delivery-FINAL.mp4"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "gsap": "^3.15.0",
+    "hyperframes": "^0.8.223"
+  },
+  "private": true
+}

@@ -1,0 +1,298 @@
+<!doctype html>
+<html
+  lang="ms"
+  data-resolution="portrait"
+  data-composition-variables='[
+    {"id":"client","type":"string","label":"Nama pelanggan","default":"Ir Faizal"},
+    {"id":"car","type":"string","label":"Model kereta","default":"Alphard SC"},
+    {"id":"city","type":"string","label":"Lokasi pelanggan","default":"Putrajaya"},
+    {"id":"date","type":"string","label":"Tarikh serahan","default":"31.10.2026"},
+    {"id":"gold","type":"color","label":"Warna aksen","default":"#F2C14E"}
+  ]'
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>Alphard SC Delivery</title>
+    <script src="assets/vendor/gsap.min.js"></script>
+    <style>
+      :root {
+        --ground: #07070a;
+        --ink: #ffffff;
+        --gold: #f2c14e;
+        --font-display: "Montserrat", sans-serif;
+        --font-body: "Inter", sans-serif;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--ground); }
+      #root { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: var(--ground); font-family: var(--font-body); color: var(--ink); }
+
+      /* ---------- Footage ---------- */
+      #footage { position: absolute; inset: 0; transform-origin: 50% 50%; z-index: 1; }
+      #footage video { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; object-fit: cover; }
+
+      /* ---------- Shared overlay styles ---------- */
+      .ov { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; z-index: 10; pointer-events: none; }
+      .scrim-top { position: absolute; left: 0; top: 0; width: 1080px; height: 820px; background: linear-gradient(180deg, rgba(0,0,0,.72) 0%, rgba(0,0,0,.35) 55%, rgba(0,0,0,0) 100%); }
+      .scrim-bottom { position: absolute; left: 0; bottom: 0; width: 1080px; height: 900px; background: linear-gradient(0deg, rgba(0,0,0,.78) 0%, rgba(0,0,0,.4) 55%, rgba(0,0,0,0) 100%); }
+      .shadow { text-shadow: 0 4px 24px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.5); }
+      .eyebrow { font-family: var(--font-body); font-weight: 700; font-size: 34px; letter-spacing: .32em; text-transform: uppercase; color: var(--gold); }
+      .gold-rule { height: 8px; background: var(--gold); border-radius: 4px; transform-origin: 0 50%; }
+
+      /* Hook */
+      #hook .wrap { position: absolute; left: 90px; top: 250px; width: 900px; }
+      #hook .big { font-family: var(--font-display); font-weight: 900; font-size: 168px; line-height: .92; letter-spacing: -.03em; text-transform: uppercase; }
+      #hook .big span { display: inline-block; }
+      #hook .sub { margin-top: 28px; font-weight: 800; font-size: 66px; line-height: 1.1; }
+      #hook .sub b { color: var(--gold); }
+      #hook .gold-rule { width: 260px; margin-top: 30px; }
+
+      /* Model chip */
+      #chip .pill { position: absolute; left: 90px; top: 1130px; display: flex; align-items: center; gap: 22px; padding: 26px 40px 26px 30px; background: rgba(10,10,14,.72); border: 2px solid rgba(255,255,255,.18); border-radius: 999px; }
+      #chip .dot { width: 22px; height: 22px; border-radius: 50%; background: var(--gold); }
+      #chip .txt { font-family: var(--font-display); font-weight: 800; font-size: 46px; letter-spacing: .06em; }
+      #chip .txt small { font-weight: 600; font-size: 34px; color: rgba(255,255,255,.75); letter-spacing: .1em; margin-right: 10px; }
+
+      /* Location card */
+      #loc .card { position: absolute; left: 90px; top: 230px; display: flex; align-items: center; gap: 26px; padding: 30px 44px 30px 32px; background: #ffffff; color: #111; border-radius: 28px; box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+      #loc .pin { width: 72px; height: 72px; flex: none; }
+      #loc .l1 { font-weight: 700; font-size: 30px; letter-spacing: .2em; text-transform: uppercase; color: #6b6b6b; }
+      #loc .l2 { font-family: var(--font-display); font-weight: 900; font-size: 64px; line-height: 1; letter-spacing: -.01em; }
+
+      /* Tagline */
+      #tag .wrap { position: absolute; left: 90px; top: 960px; width: 900px; }
+      #tag .line { font-family: var(--font-display); font-weight: 900; font-size: 96px; line-height: .98; letter-spacing: -.02em; }
+      #tag .line.gold { color: var(--gold); }
+      #tag .mask { overflow: hidden; padding-bottom: 8px; }
+      #tag .mask > div { display: block; }
+
+      /* Photo moment */
+      #photo .bg { position: absolute; inset: 0; background: radial-gradient(120% 70% at 50% 42%, #2a2116 0%, #0b0a09 62%, #050505 100%); }
+      #photo .frame { position: absolute; left: 110px; top: 330px; width: 860px; padding: 26px 26px 120px; background: #fbfaf7; border-radius: 10px; box-shadow: 0 40px 120px rgba(0,0,0,.6); transform-origin: 50% 60%; }
+      #photo .frame img { display: block; width: 808px; height: 1073px; object-fit: cover; }
+      #photo .cap { position: absolute; left: 0; right: 0; bottom: 34px; text-align: center; color: #1a1a1a; font-weight: 700; font-size: 38px; letter-spacing: .04em; }
+      #photo .flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
+
+      /* VIP cabin caption */
+      #vip .card { position: absolute; left: 90px; top: 1120px; padding: 26px 40px; background: var(--gold); color: #141414; border-radius: 22px; font-family: var(--font-display); font-weight: 900; font-size: 56px; letter-spacing: -.01em; }
+      #vip .card small { display: block; font-family: var(--font-body); font-weight: 700; font-size: 28px; letter-spacing: .22em; text-transform: uppercase; margin-bottom: 6px; opacity: .75; }
+
+      /* Wave caption */
+      #bye .txt { position: absolute; left: 90px; top: 260px; font-family: var(--font-display); font-weight: 900; font-size: 92px; letter-spacing: -.02em; }
+
+      /* End card */
+      #endcard .shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,.25) 0%, rgba(0,0,0,.78) 38%, rgba(0,0,0,.85) 70%, rgba(0,0,0,.55) 100%); opacity: 0; }
+      #endcard .wrap { position: absolute; left: 90px; top: 560px; width: 900px; text-align: center; }
+      #endcard .eyebrow { font-size: 40px; }
+      #endcard .name { margin-top: 18px; font-family: var(--font-display); font-weight: 900; font-size: 150px; line-height: .95; letter-spacing: -.03em; text-transform: uppercase; }
+      #endcard .gold-rule { width: 200px; margin: 40px auto 36px; transform-origin: 50% 50%; }
+      #endcard .msg { font-weight: 700; font-size: 52px; line-height: 1.2; }
+      #endcard .msg b { color: var(--gold); }
+      #endcard .meta { margin-top: 34px; font-weight: 600; font-size: 32px; letter-spacing: .24em; text-transform: uppercase; color: rgba(255,255,255,.7); }
+
+      /* Cut flash */
+      #flash { position: absolute; inset: 0; z-index: 40; background: #fff; opacity: 0; pointer-events: none; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="33.5" data-width="1080" data-height="1920" data-fps="30">
+
+      <!-- =====================================================
+           FOOTAGE (senyap — audio asal dibuang, hanya SFX)
+           Shot list: lihat EDIT-PLAN.md
+           ===================================================== -->
+      <div id="footage">
+        <!-- S1 HOOK: lampu depan menyala -->
+        <video id="s01" class="clip" src="assets/footage/c08-headlights.mp4" data-start="0" data-duration="2" data-media-start="0.3" data-track-index="0" muted playsinline></video>
+        <!-- S2: grille + DRL dekat -->
+        <video id="s02" class="clip" src="assets/footage/c12-grille-drl.mp4" data-start="2" data-duration="2.4" data-media-start="3.4" data-track-index="0" muted playsinline></video>
+        <!-- S3: lampu belakang -->
+        <video id="s03" class="clip" src="assets/footage/c09-taillights.mp4" data-start="4.4" data-duration="2" data-media-start="0.4" data-track-index="0" muted playsinline></video>
+        <!-- S4: keluarga lambai depan reben -->
+        <video id="s04" class="clip" src="assets/footage/c01-family-wave.mp4" data-start="6.4" data-duration="2.8" data-media-start="2.6" data-track-index="0" muted playsinline></video>
+        <!-- S5: ayah + anak lambai -->
+        <video id="s05" class="clip" src="assets/footage/c02-dad-daughter.mp4" data-start="9.2" data-duration="2" data-media-start="0.8" data-track-index="0" muted playsinline></video>
+        <!-- S6: ibu + anak-anak, reben merah -->
+        <video id="s06" class="clip" src="assets/footage/c04-mum-kids-bow.mp4" data-start="11.2" data-duration="2.4" data-media-start="4.0" data-track-index="0" muted playsinline></video>
+        <!-- S7: pelanggan dengan jambak bunga -->
+        <video id="s07" class="clip" src="assets/footage/c10-bouquet-bow.mp4" data-start="13.6" data-duration="2" data-media-start="5.0" data-track-index="0" muted playsinline></video>
+        <!-- S9: buka pintu -->
+        <video id="s09" class="clip" src="assets/footage/c05-open-door.mp4" data-start="18.4" data-duration="2.2" data-media-start="0.2" data-track-index="0" muted playsinline></video>
+        <!-- S10: tinjau kabin -->
+        <video id="s10" class="clip" src="assets/footage/c06-check-cabin.mp4" data-start="20.6" data-duration="1.8" data-media-start="1.4" data-track-index="0" muted playsinline></video>
+        <!-- S11: anak-anak dalam kabin -->
+        <video id="s11" class="clip" src="assets/footage/c07-kids-inside.mp4" data-start="22.4" data-duration="2.4" data-media-start="0.3" data-track-index="0" muted playsinline></video>
+        <!-- S12: kereta bergerak keluar (tracking) -->
+        <video id="s12" class="clip" src="assets/footage/c13-drive-off.mp4" data-start="24.8" data-duration="2.8" data-media-start="0.3" data-track-index="0" muted playsinline></video>
+        <!-- S13: lambai dari tingkap -->
+        <video id="s13" class="clip" src="assets/footage/c13-drive-off.mp4" data-start="27.6" data-duration="1.6" data-media-start="8.0" data-track-index="0" muted playsinline></video>
+        <!-- S14: pandu pergi ke malam (slow-mo) -->
+        <video id="s14" class="clip" src="assets/footage/c13-drive-off.mp4" data-start="29.2" data-duration="4.3" data-media-start="11.7" data-playback-rate="0.72" data-track-index="0" muted playsinline></video>
+      </div>
+
+      <!-- =====================================================
+           MOTION GRAPHICS
+           ===================================================== -->
+
+      <!-- Hook 0.0–2.0 -->
+      <div id="hook" class="ov clip" data-start="0" data-duration="2" data-track-index="2" data-track-kind="graphics">
+        <div class="scrim-top"></div>
+        <div class="wrap shadow">
+          <div class="big" id="hook-big"><span data-var-text="car">Alphard SC</span></div>
+          <div class="gold-rule" id="hook-rule"></div>
+          <div class="sub" id="hook-sub">Kini milik <b data-var-text="client">Ir Faizal</b></div>
+        </div>
+      </div>
+
+      <!-- Model chip 2.3–4.4 -->
+      <div id="chip" class="ov clip" data-start="2.3" data-duration="2.1" data-track-index="2" data-track-kind="graphics">
+        <div class="pill" id="chip-pill"><div class="dot"></div><div class="txt"><small>TOYOTA</small><span data-var-text="car">Alphard SC</span></div></div>
+      </div>
+
+      <!-- Location 6.6–9.2 -->
+      <div id="loc" class="ov clip" data-start="6.6" data-duration="2.6" data-track-index="2" data-track-kind="graphics">
+        <div class="card" id="loc-card">
+          <svg class="pin" viewBox="0 0 24 24" aria-hidden="true"><path fill="#F2C14E" d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.6" fill="#141414"/></svg>
+          <div><div class="l1">Serahan ke</div><div class="l2" data-var-text="city">Putrajaya</div></div>
+        </div>
+      </div>
+
+      <!-- Tagline 11.4–15.6 -->
+      <div id="tag" class="ov clip" data-start="11.4" data-duration="4.2" data-track-index="2" data-track-kind="graphics">
+        <div class="scrim-bottom"></div>
+        <div class="wrap shadow">
+          <div class="mask"><div class="line" id="tag-1">Impian keluarga,</div></div>
+          <div class="mask"><div class="line gold" id="tag-2">jadi nyata.</div></div>
+        </div>
+      </div>
+
+      <!-- Photo moment 15.6–18.4 -->
+      <div id="photo" class="ov clip" data-start="15.6" data-duration="2.8" data-track-index="3" data-track-kind="graphics">
+        <div class="bg"></div>
+        <div class="frame" id="photo-frame">
+          <img src="assets/img/family-photo.jpg" alt="Gambar keluarga bersama Alphard SC" />
+          <div class="cap">Kenangan · <span data-var-text="date">31.10.2026</span></div>
+        </div>
+        <div class="flash" id="photo-flash"></div>
+      </div>
+
+      <!-- VIP cabin 22.6–24.8 -->
+      <div id="vip" class="ov clip" data-start="22.6" data-duration="2.2" data-track-index="2" data-track-kind="graphics">
+        <div class="card" id="vip-card"><small>Kabin VIP</small>Penumpang pertama!</div>
+      </div>
+
+      <!-- Bye 27.7–29.2 -->
+      <div id="bye" class="ov clip" data-start="27.7" data-duration="1.5" data-track-index="2" data-track-kind="graphics">
+        <div class="scrim-top"></div>
+        <div class="txt shadow" id="bye-txt">Jom, balik!</div>
+      </div>
+
+      <!-- End card 30.0–33.5 -->
+      <div id="endcard" class="ov clip" data-start="30" data-duration="3.5" data-track-index="3" data-track-kind="graphics">
+        <div class="shade" id="end-shade"></div>
+        <div class="wrap shadow">
+          <div class="eyebrow" id="end-eyebrow">Tahniah</div>
+          <div class="name" id="end-name" data-var-text="client">Ir Faizal</div>
+          <div class="gold-rule" id="end-rule"></div>
+          <div class="msg" id="end-msg">Selamat memandu<br /><b><span>Toyota </span><span data-var-text="car">Alphard SC</span></b> baharu</div>
+          <div class="meta" id="end-meta"><span data-var-text="city">Putrajaya</span> · <span data-var-text="date">31.10.2026</span></div>
+        </div>
+      </div>
+
+      <div id="flash"></div>
+
+      <!-- =====================================================
+           SOUND FX (tiada muzik, tiada audio asal)
+           Puncak setiap fail diukur dengan `hyperframes audio`
+           ===================================================== -->
+      <audio id="sfx-hook-impact" class="clip" src="assets/sfx/impact-bass-1.mp3" data-start="0" data-duration="2.1" data-volume="0.85" data-track-index="5"></audio>
+      <audio id="sfx-cut-1" class="clip" src="assets/sfx/whoosh-short.mp3" data-start="1.94" data-duration="0.57" data-volume="0.55" data-track-index="6"></audio>
+      <audio id="sfx-chip" class="clip" src="assets/sfx/pop.mp3" data-start="2.32" data-duration="0.72" data-volume="0.45" data-track-index="7"></audio>
+      <audio id="sfx-cut-2" class="clip" src="assets/sfx/whoosh.mp3" data-start="4.34" data-duration="0.57" data-volume="0.5" data-track-index="6"></audio>
+      <audio id="sfx-loc" class="clip" src="assets/sfx/pop.mp3" data-start="6.62" data-duration="0.72" data-volume="0.5" data-track-index="7"></audio>
+      <audio id="sfx-tag" class="clip" src="assets/sfx/sparkle.mp3" data-start="11.42" data-duration="1.8" data-volume="0.3" data-track-index="7"></audio>
+      <audio id="sfx-shutter" class="clip" src="assets/sfx/click.mp3" data-start="15.56" data-duration="0.37" data-volume="0.9" data-track-index="6"></audio>
+      <audio id="sfx-photo" class="clip" src="assets/sfx/sparkle.mp3" data-start="15.85" data-duration="1.8" data-volume="0.28" data-track-index="7"></audio>
+      <audio id="sfx-cut-3" class="clip" src="assets/sfx/whoosh-short.mp3" data-start="18.34" data-duration="0.57" data-volume="0.5" data-track-index="6"></audio>
+      <audio id="sfx-vip" class="clip" src="assets/sfx/pop.mp3" data-start="22.62" data-duration="0.72" data-volume="0.5" data-track-index="7"></audio>
+      <audio id="sfx-cut-4" class="clip" src="assets/sfx/whoosh.mp3" data-start="24.74" data-duration="0.57" data-volume="0.45" data-track-index="6"></audio>
+      <audio id="sfx-riser" class="clip" src="assets/sfx/riser.mp3" data-start="26.53" data-duration="3.9" data-volume="0.5" data-fade-in="0.6" data-fade-out="0.4" data-track-index="5"></audio>
+      <audio id="sfx-end-impact" class="clip" src="assets/sfx/impact-bass-1.mp3" data-start="29.96" data-duration="2.1" data-volume="0.9" data-track-index="8"></audio>
+      <audio id="sfx-end-sparkle" class="clip" src="assets/sfx/sparkle.mp3" data-start="30.38" data-duration="1.8" data-volume="0.3" data-track-index="7"></audio>
+    </div>
+
+    <script>
+      const vars = (window.__hyperframes && window.__hyperframes.getVariables && window.__hyperframes.getVariables()) || {};
+      if (vars.gold) document.documentElement.style.setProperty("--gold", vars.gold);
+
+      const tl = gsap.timeline({ paused: true });
+      const F = "#footage";
+
+      // ---------- Camera: slow push-in per shot (untimed container, reset at each cut) ----------
+      const shots = [
+        [0, 2, 1.12, 1.0],      // hook: pull-back reveal
+        [2, 2.4, 1.0, 1.08],
+        [4.4, 2, 1.04, 1.0],
+        [6.4, 2.8, 1.0, 1.06],
+        [9.2, 2, 1.0, 1.05],
+        [11.2, 2.4, 1.0, 1.06],
+        [13.6, 2, 1.06, 1.0],
+        [18.4, 2.2, 1.0, 1.05],
+        [20.6, 1.8, 1.0, 1.06],
+        [22.4, 2.4, 1.0, 1.05],
+        [24.8, 2.8, 1.0, 1.04],
+        [27.6, 1.6, 1.08, 1.12],
+        [29.2, 4.3, 1.0, 1.08],
+      ];
+      shots.forEach(([t, d, a, b]) => tl.fromTo(F, { scale: a }, { scale: b, duration: d, ease: "none", immediateRender: false }, t));
+
+      // ---------- Hook ----------
+      tl.fromTo("#hook-big", { scale: 1.06, transformOrigin: "0% 50%" }, { scale: 1, duration: 0.5, ease: "power3.out" }, 0);
+      tl.fromTo("#hook-rule", { scaleX: 0.35 }, { scaleX: 1, duration: 0.5, ease: "power3.out" }, 0);
+      tl.fromTo("#hook-sub", { y: 14 }, { y: 0, duration: 0.5, ease: "power3.out" }, 0);
+      tl.to("#hook .wrap", { opacity: 0, y: -30, duration: 0.2, ease: "power2.in" }, 1.75);
+
+      // ---------- Model chip ----------
+      tl.fromTo("#chip-pill", { opacity: 0, x: -80 }, { opacity: 1, x: 0, duration: 0.45, ease: "back.out(1.6)" }, 2.3);
+      tl.to("#chip-pill", { opacity: 0, x: -40, duration: 0.2, ease: "power2.in" }, 4.15);
+
+      // ---------- Cut flash night → showroom ----------
+      tl.fromTo("#flash", { opacity: 0 }, { opacity: 0.85, duration: 0.08, ease: "none" }, 4.32);
+      tl.to("#flash", { opacity: 0, duration: 0.3, ease: "power2.out" }, 4.4);
+
+      // ---------- Location ----------
+      tl.fromTo("#loc-card", { opacity: 0, y: -40, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.8)" }, 6.6);
+      tl.to("#loc-card", { opacity: 0, y: -20, duration: 0.2, ease: "power2.in" }, 8.95);
+
+      // ---------- Tagline ----------
+      tl.fromTo("#tag-1", { yPercent: 110 }, { yPercent: 0, duration: 0.55, ease: "power4.out" }, 11.45);
+      tl.fromTo("#tag-2", { yPercent: 110 }, { yPercent: 0, duration: 0.55, ease: "power4.out" }, 11.7);
+      tl.to("#tag .wrap", { opacity: 0, duration: 0.25, ease: "power2.in" }, 15.3);
+
+      // ---------- Photo moment ----------
+      tl.fromTo("#photo-flash", { opacity: 1 }, { opacity: 0, duration: 0.45, ease: "power2.out" }, 15.6);
+      tl.fromTo("#photo-frame", { scale: 1.08, rotation: -4, y: 40 }, { scale: 1, rotation: -2, y: 0, duration: 0.7, ease: "power3.out" }, 15.6);
+      tl.to("#photo-frame", { scale: 1.03, rotation: -1.5, duration: 2.0, ease: "none" }, 16.3);
+
+      // ---------- VIP ----------
+      tl.fromTo("#vip-card", { opacity: 0, scale: 0.6, rotation: -6 }, { opacity: 1, scale: 1, rotation: -2, duration: 0.45, ease: "back.out(2)" }, 22.6);
+      tl.to("#vip-card", { opacity: 0, y: 20, duration: 0.2, ease: "power2.in" }, 24.55);
+
+      // ---------- Bye ----------
+      tl.fromTo("#bye-txt", { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.35, ease: "power3.out" }, 27.7);
+      tl.to("#bye-txt", { opacity: 0, duration: 0.2 }, 28.95);
+
+      // ---------- End card ----------
+      tl.fromTo("#end-shade", { opacity: 0 }, { opacity: 1, duration: 0.6, ease: "power2.out" }, 30);
+      tl.fromTo("#end-eyebrow", { opacity: 0, y: -16 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 30.05);
+      tl.fromTo("#end-name", { opacity: 0, scale: 1.25 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power4.out" }, 30.0);
+      tl.fromTo("#end-rule", { scaleX: 0 }, { scaleX: 1, duration: 0.5, ease: "power3.out" }, 30.35);
+      tl.fromTo("#end-msg", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 30.5);
+      tl.fromTo("#end-meta", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, 30.8);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
