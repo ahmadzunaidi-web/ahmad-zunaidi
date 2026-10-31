@@ -671,3 +671,101 @@ dialog [data-close]{flex:none;width:44px;padding:0;font-size:24px;line-height:1;
 .nav button[data-page="cmo"]>span:first-child,.bottom-nav button[data-page="cmo"]>span:first-child{--ico:var(--i-cmo)}
 .nav button[data-page="settings"]>span:first-child,.bottom-nav button[data-page="settings"]>span:first-child{--ico:var(--i-settings)}
 #moreOpen>span:first-child{--ico:var(--i-more)}
+
+/* =====================================================================
+   Lapisan modul yang disuntik oleh Cloudflare Worker (SEO Command Center,
+   AI Infrastructure, AI Command Center, Takaful Keluarga, tema bersatu).
+   Modul-modul ini membawa CSS sendiri dan dimuat selepas ks.css, jadi
+   pemilih di sini sengaja lebih spesifik ("html body #appRoot ...").
+   ===================================================================== */
+
+/* tema bersatu lama (dashboard-unified-theme.css) disesuaikan kepada token */
+html body #appRoot,html body #appRoot .ksseo,html body #appRoot .infra-page,html body #appRoot .mk{font-family:var(--font-body)}
+html body #appRoot :is(a,button,input,select,textarea):focus-visible,
+html body .ksseo :is(a,button,input,select,textarea):focus-visible,
+html body .mk :is(a,button,input,select,textarea):focus-visible{outline:2px solid var(--ws)!important;outline-offset:2px!important}
+html body #appRoot .top,html body #appRoot .card,html body #appRoot .panel{border-color:var(--line)}
+html body #appRoot .muted,html body #appRoot .account.muted{color:var(--muted)}
+html body #appRoot .biz-pill.recond{background:var(--recond);color:var(--ws-on)}
+html body #appRoot .biz-pill.proton{background:var(--proton);color:var(--ws-on)}
+html body #appRoot .nav button.active,html body #appRoot .bottom-nav button.active{font-weight:650}
+html body .mk{--mk-text:var(--ink);--mk-muted:var(--muted)}
+html body .mk .mk-top h1{color:var(--ink)!important;font-weight:700}
+html body #appRoot .mk .mk-sub,html body #appRoot .mk label{color:var(--ink-2)}
+html body #appRoot .mk :is(input,select,textarea){color:var(--ink);border-color:var(--line-strong)}
+html body #appRoot .mk :is(input,select,textarea)::placeholder{color:var(--muted)}
+
+/* menu sisi: AI Command Center, SEO Command Center, Takaful Keluarga */
+html body #appRoot .ai-cc-nav-top{display:flex!important;align-items:center!important;gap:12px!important;min-height:52px!important;padding:10px 12px!important;margin:0 0 4px!important;border:1px solid var(--line)!important;border-radius:var(--r-m)!important;background:var(--surface-2)!important;color:var(--ink)!important;font:500 12px/1.3 var(--font-mono)!important;letter-spacing:.07em!important;text-transform:uppercase!important;text-decoration:none!important}
+html body #appRoot .ai-cc-nav-top>span:first-child{width:30px!important;height:30px!important;border-radius:5px!important;background:var(--plate-bg)!important;color:var(--plate-fg)!important;font-size:15px!important}
+html body #appRoot .ai-cc-nav-top>span:last-child{font-size:16px!important;color:var(--muted)}
+html body .ksseo-nav{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:10px!important;min-height:44px!important;padding:8px 12px!important;margin:0 0 4px!important;border:1px solid var(--line)!important;border-radius:var(--r-s)!important;background:transparent!important;color:var(--ink-2)!important;font:600 14px var(--font-body)!important;text-align:left!important}
+html body .ksseo-nav.active{background:var(--ink)!important;color:var(--bg)!important;border-color:var(--ink)!important}
+html body .ws-grp.takaful{border-left:0}
+html body .ws-grp.takaful .ws-head{background:transparent;color:var(--ink-2)}
+html body .ws-grp.takaful .ws-head .dot{background:#2885bf!important;border-radius:3px}
+html body .ws-grp.takaful .ks-tn-item{display:flex;align-items:center;gap:12px;min-height:42px;padding:8px 10px;border-radius:var(--r-s);background:transparent;color:var(--ink-2);text-decoration:none;font:500 14px var(--font-body)}
+html body .ws-grp.takaful .ks-tn-item>span:first-child{width:20px;text-align:center;font-size:15px}
+@media(hover:hover){html body .ws-grp.takaful .ks-tn-item:hover{background:var(--surface-2)}}
+html body .picker-card.takaful{--c:#2885bf;--c-ink:#1f6a99;--c-tint:#e3f0fa;border:1px solid var(--line)}
+@media(prefers-color-scheme:dark){html body .picker-card.takaful{--c:#6db8ea;--c-ink:#8ccaf2;--c-tint:#152a3a}}
+html body .ksseo-picker{display:block;width:100%;min-height:62px;padding:16px;margin:12px 0;border:1px solid var(--line);border-radius:var(--r-l);background:var(--surface);color:var(--ink);font:600 15px var(--font-body);text-align:left}
+@media(hover:hover){html body .ksseo-picker:hover{background:var(--ws-tint);border-color:var(--ws)}}
+
+/* SEO Command Center */
+html body #appRoot .ksseo{max-width:1240px;color:var(--ink);line-height:1.55}
+html body #appRoot .ksseo .ksseo-head{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-l);box-shadow:none;padding:20px;margin-bottom:14px}
+html body #appRoot .ksseo .ksseo-head h1{color:var(--ink)!important;font:700 clamp(24px,4vw,32px)/1.15 var(--font-display)!important;font-stretch:108%;letter-spacing:-.02em}
+html body #appRoot .ksseo .ksseo-head p{color:var(--muted)!important;font-size:14px}
+html body #appRoot .ksseo .ksseo-head :is(small,.ksseo-muted){color:var(--muted)!important;font:500 11px var(--font-mono);letter-spacing:.09em;text-transform:uppercase}
+html body #appRoot .ksseo .ksseo-switch{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0}
+html body #appRoot .ksseo .ksseo-switch a{display:inline-flex;align-items:center;min-height:44px;padding:0 6px;font-weight:600;font-size:14px;color:var(--ws-ink)}
+html body #appRoot .ksseo .ksseo-switch button{flex:1 1 140px;background:var(--surface);color:var(--ink-2);border:1px solid var(--line-strong);border-radius:var(--r-s);min-height:46px;font:600 14px var(--font-body)}
+html body #appRoot .ksseo .ksseo-switch button.active{background:var(--ws);border-color:var(--ws);color:var(--ws-on)}
+html body #appRoot .ksseo .ksseo-tabs{gap:2px;margin:0 0 14px;padding:0;border-bottom:1px solid var(--line);scrollbar-width:none}
+html body #appRoot .ksseo .ksseo-tabs::-webkit-scrollbar{display:none}
+html body #appRoot .ksseo .ksseo-tabs button{flex:none;background:transparent;color:var(--muted);border:0;border-bottom:3px solid transparent;border-radius:0;margin-bottom:-1px;min-height:46px;padding:0 14px;font:600 14px var(--font-body);white-space:nowrap}
+html body #appRoot .ksseo .ksseo-tabs button.active{background:transparent;color:var(--ink);border-bottom-color:var(--ws)}
+html body #appRoot .ksseo .ksseo-next{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--ws-tint);border:0;border-radius:var(--r-m);color:var(--ink);padding:14px 16px;margin:14px 0}
+html body #appRoot .ksseo .ksseo-next b{color:var(--ws-ink);font:500 11px var(--font-mono);letter-spacing:.09em;text-transform:uppercase}
+html body #appRoot .ksseo .ksseo-next span{color:var(--ink);font-size:15px}
+html body #appRoot .ksseo :is(.ksseo-metric,.ksseo-box){border:1px solid var(--line);border-radius:var(--r-l);background:var(--surface);color:var(--ink);box-shadow:none}
+html body #appRoot .ksseo .ksseo-metric strong{font:600 clamp(22px,3.6vw,32px)/1.1 var(--font-display);font-stretch:110%;font-variant-numeric:tabular-nums;color:var(--ink)}
+html body #appRoot .ksseo :is(.ksseo-muted,.ksseo-metric small){color:var(--muted)}
+html body #appRoot .ksseo .ksseo-box h2{font:700 17px var(--font-display);font-stretch:106%;color:var(--ink)}
+html body #appRoot .ksseo .ksseo-box h3{color:var(--ink)}
+html body #appRoot .ksseo .ksseo-note{background:var(--surface-2);color:var(--ink-2);border-radius:var(--r-m)}
+html body #appRoot .ksseo .ksseo-alert{background:var(--warn-tint);border:1px solid var(--warn-line);color:var(--warn-ink);border-radius:var(--r-m)}
+html body #appRoot .ksseo .ksseo-toast{background:var(--ink);color:var(--bg);border-radius:var(--r-m)}
+html body #appRoot .ksseo .ksseo-chip{background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);border-radius:4px;font:500 11px/1.3 var(--font-mono);letter-spacing:.03em;text-transform:uppercase;padding:4px 7px}
+html body #appRoot .ksseo .ksseo-chip.ok{background:var(--good-tint);color:var(--good);border-color:transparent}
+html body #appRoot .ksseo .ksseo-chip.warn{background:var(--warn-tint);color:var(--warn-ink);border-color:var(--warn-line)}
+html body #appRoot .ksseo .ksseo-chip.bad{background:var(--bad-tint);color:var(--bad);border-color:transparent}
+html body #appRoot .ksseo .ksseo-chip.info{background:var(--ws-tint);color:var(--ws-ink);border-color:transparent}
+html body #appRoot .ksseo .ksseo-row{border-top-color:var(--line)}
+html body #appRoot .ksseo .ksseo-form :is(input,select,textarea){background:var(--surface);color:var(--ink);border:1px solid var(--line-strong);border-radius:var(--r-s)}
+html body #appRoot .ksseo :is(button.p,.ksseo-form button){background:var(--ws);border-color:var(--ws);color:var(--ws-on);border-radius:var(--r-s)}
+html body #appRoot .ksseo button.s{background:var(--surface);color:var(--ink);border:1px solid var(--line-strong);border-radius:var(--r-s)}
+html body #appRoot .ksseo button.d{background:var(--surface);color:var(--bad);border:1px solid var(--bad);border-radius:var(--r-s)}
+html body #appRoot .ksseo .ksseo-steps i{background:var(--sunk);border-radius:2px}
+html body #appRoot .ksseo .ksseo-steps i.on{background:var(--good)}
+html body #appRoot .ksseo .ksseo-steps i.now{background:var(--ws)}
+html body #appRoot .ksseo :is(.ksseo-table td,.ksseo-table th){border-top-color:var(--line)}
+html body #appRoot .ksseo .ksseo-link{border:1px solid var(--line);border-radius:var(--r-m);color:var(--ws-ink);background:var(--surface)}
+html body #appRoot .ksseo .ksseo-link small{color:var(--muted)}
+html body #appRoot .ksseo a{color:var(--ws-ink)}
+html body #appRoot .ksseo .ksseo-covers button{background:var(--sunk);border-radius:var(--r-s)}
+html body #appRoot .ksseo .ksseo-covers button.sel{border-color:var(--ws)}
+
+/* Infrastructure dan AI Chat membawa palet terang sendiri; dalam mod gelap ia dipaparkan sebagai helaian terang supaya teks kekal terbaca */
+@media(prefers-color-scheme:dark){
+  html body .ix,html body .infra-page{--bg:#eef1f5;--surface:#fff;--surface-2:#f3f4f6;--ink:#101827;--ink-2:#2e3844;--muted:#556070;--line:#d7dbe1;--line-strong:#8a94a3;background:#eef1f5;color:#101827;padding:clamp(10px,2vw,18px);border-radius:var(--r-l);color-scheme:light}
+}
+
+/* kad pemilih Takaful dan AI Infrastructure dibina oleh skrip dengan gaya sebaris */
+html body .picker-card{display:grid!important;border-top:1px solid var(--line)!important;text-decoration:none;color:var(--ink)}
+html body .picker-card .pc-tag{color:var(--ws-on)!important}
+html body .picker-card em{color:var(--c-ink)!important}
+html body .picker-card.infra{--c:#0e7490;--c-ink:#0e7490;--c-tint:#dff3f8}
+@media(prefers-color-scheme:dark){html body .picker-card.infra{--c:#5cc4dc;--c-ink:#7fd3e6;--c-tint:#12303a}}
+@media(hover:hover){html body .picker-card:hover{border-color:var(--c)!important}}
