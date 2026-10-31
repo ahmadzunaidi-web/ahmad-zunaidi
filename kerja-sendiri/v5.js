@@ -28,7 +28,7 @@ document.addEventListener('click',e=>{
  if(section){e.stopImmediatePropagation();v5Knowledge.section=section.dataset.v5Section;if(v5Module[v5Knowledge.section])(platform.knowledgeAuto=platform.knowledgeAuto||{})[state.business]=false;kc.tab=v5Module[v5Knowledge.section]?'docs':v5Knowledge.section==='test'?'instructions':v5Knowledge.section;kc.force=true;render();kc.force=false;return}
  const shortcut=e.target.closest('[data-kc-open],[data-kc-tab]');
  if(shortcut)v5Knowledge.section=shortcut.dataset.kcOpen||shortcut.dataset.kcTab;
- if(e.target.closest('#mobileMenu')){$('moreDialog').showModal();return}
+ if(e.target.closest('#mobileMenu,#moreOpen')){$('moreDialog').showModal();return}
  if(e.target.closest('#sidebarToggle')){
   const tablet=matchMedia('(max-width:1023px)').matches;
   document.body.classList.toggle(tablet?'sidebar-expanded':'sidebar-collapsed');
