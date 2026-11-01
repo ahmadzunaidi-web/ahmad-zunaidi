@@ -10,7 +10,7 @@
   --cc-shadow:0 4px 18px rgba(16,31,54,.055);
 }
 #appRoot, .ksseo, .infra-page, .mk, .ks-cc-page {
-  font-family:Inter,"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  font-family:var(--ks-font,-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Arial,sans-serif);
   -webkit-font-smoothing:antialiased;
 }
 #appRoot button, #appRoot input, #appRoot select, #appRoot textarea,
@@ -91,13 +91,13 @@
 .mk :is(input,select,textarea){color:#f8fbff;border-color:#60718a}
 .mk :is(input,select,textarea)::placeholder{color:#b6c5d8}
 /* AI Sales Control Center is a separate HTML document, so it receives this stylesheet directly. */
-html:has(body.ks-cc-page):not([data-theme=dark]) {
+html:not([data-ks-v6]):has(body.ks-cc-page):not([data-theme=dark]) {
  --bg:#f4f6fa;--panel:#fff;--soft:#edf2f8;--line:#cfd7e4;
  --fg:#101f36;--mut:#475569;--acc:#155eef;--accbg:#e7efff;
  --ok:#165b35;--okbg:#e7f5eb;--warn:#805200;--warnbg:#fff1d6;
  --bad:#9f2b1e;--badbg:#fdeae6;--r:14px;
 }
-body.ks-cc-page{font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+body.ks-cc-page{font-family:var(--ks-font,-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Arial,sans-serif)}
 .ks-cc-page header{background:var(--bg)}
 .ks-cc-page h1{font-weight:800;letter-spacing:-.025em}
 .ks-cc-page .card{border:1px solid var(--line);border-radius:16px;box-shadow:var(--cc-shadow)}
