@@ -1,0 +1,3 @@
+  }catch(e){if([400,401,403].includes(e?.status)){clearSession()}else{state.session=null;state.leads=null;state.threads=null;state.thread=null;document.body.classList.add('authed');$('view').replaceChildren();const box=document.createElement('section');box.className='card';const text=document.createElement('p');text.textContent='Sambungan sesi terganggu. Cuba lagi untuk sahkan akses.';const retry=document.createElement('button');retry.type='button';retry.textContent='Cuba lagi';retry.onclick=()=>location.reload();box.append(text,retry);$('view').append(box)}}/* KS_V6_RESTORE_RETRY */
+ })();
+})();

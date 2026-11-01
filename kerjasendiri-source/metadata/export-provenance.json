@@ -1,0 +1,28 @@
+{
+  "export_date_myt": "2026-11-01",
+  "production_worker": "kerjasendiri",
+  "version_id": "3e6d5fad-0a07-4394-8fec-7c23076c91f9",
+  "source_sha256": "c3b594b1f8b85c1444ff5b8f36c523b01e8034ec8d23fa056ff691d0a8ff336e",
+  "repository": "ahmadzunaidi-web/kerjasendiri-infra",
+  "repository_commit": "1f02bca96da8d8cb23e9fedb77b9d5a24481f978",
+  "routes": [
+    "kerjasendiri.my/*",
+    "www.kerjasendiri.my/*"
+  ],
+  "workers_dev": true,
+  "preview_urls": false,
+  "scheduled_triggers": [],
+  "bindings": [
+    {
+      "name": "ASSETS",
+      "type": "assets"
+    }
+  ],
+  "mutations_performed": false,
+  "asset_inventory_basis": "All public/ blob paths from repository tree, tested against production; closure of asset references in exported UI. No authoritative Cloudflare ASSETS object listing available.",
+  "not_exported": [
+    "Original production wrangler authoring file; reconstructed effective configuration supplied",
+    "Unreferenced assets absent from repository inventory cannot be ruled out",
+    "Supabase backend function source, database, user records, secrets, externally hosted images"
+  ]
+}

@@ -1,0 +1,121 @@
+/* Kerja Sendiri | Unified Dashboard UI V1 — light, accessible, mobile-first.
+ * Scoped to owner dashboards; public landing (#landing) intentionally excluded.
+ * A design-language layer, not an authentication or business-logic change.
+ */
+:root {
+  --cc-bg:#f4f6fa; --cc-panel:#ffffff; --cc-ink:#101f36;
+  --cc-muted:#475569; --cc-line:#cfd7e4; --cc-soft:#edf2f8;
+  --cc-navy:#101f36; --cc-blue:#155eef; --cc-green:#165b35;
+  --cc-orange:#c2410c; --cc-radius:16px;
+  --cc-shadow:0 4px 18px rgba(16,31,54,.055);
+}
+#appRoot, .ksseo, .infra-page, .mk, .ks-cc-page {
+  font-family:Inter,"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+#appRoot button, #appRoot input, #appRoot select, #appRoot textarea,
+.ksseo button, .ksseo input, .ksseo select, .ksseo textarea,
+.infra-page button, .infra-page input, .infra-page select,
+.mk button, .mk input, .mk select,
+.ks-cc-page button, .ks-cc-page input, .ks-cc-page select {
+  font-family:inherit;
+}
+#appRoot :is(a,button,input,select,textarea):focus-visible,
+.ksseo :is(a,button,input,select,textarea):focus-visible,
+.infra-page :is(a,button,input,select,textarea):focus-visible,
+.mk :is(a,button,input,select,textarea):focus-visible,
+.ks-cc-page :is(a,button,input,select,textarea):focus-visible {
+  outline:3px solid #155eef!important;outline-offset:2px!important;
+}
+#appRoot .top, #appRoot .card, #appRoot .panel {
+  border-color:var(--cc-line);
+}
+#appRoot .muted, #appRoot .account.muted {color:#475569}
+#appRoot .biz-pill.recond {background:var(--cc-orange);color:#fff}
+#appRoot .biz-pill.proton {background:#154cbe;color:#fff}
+#appRoot .nav button.active, #appRoot .bottom-nav button.active {
+  font-weight:750;
+}
+#appRoot :is(button,input,select,textarea) {min-height:44px}
+#appRoot .ai-cc-nav-top {border-left-color:var(--cc-navy)!important;background:var(--cc-soft)!important;color:var(--cc-ink)!important}
+#appRoot .ai-cc-nav-top:focus-visible {outline:3px solid var(--cc-blue)}
+/* SEO: local embedded styles arrive earlier/later depending on script timing.
+ * Increased selector specificity prevents generic h1/button rules from overriding legibility. */
+#appRoot .ksseo, .ksseo.ksseo {color:var(--cc-ink);line-height:1.5}
+#appRoot .ksseo .ksseo-head, .ksseo.ksseo .ksseo-head {
+  background:var(--cc-navy);color:#fff;border:1px solid #0c1728;
+  box-shadow:var(--cc-shadow);border-radius:20px;
+}
+#appRoot .ksseo .ksseo-head h1, .ksseo.ksseo .ksseo-head h1 {
+  color:#fff!important;font-size:clamp(23px,5vw,32px);font-weight:800;letter-spacing:-.035em;
+}
+#appRoot .ksseo .ksseo-head p, .ksseo.ksseo .ksseo-head p {color:#e3ebf6!important;font-size:14px;line-height:1.5}
+#appRoot .ksseo .ksseo-switch button, .ksseo.ksseo .ksseo-switch button {
+  background:#e8edf5;color:var(--cc-ink);border:1px solid #cad4e1;
+  min-height:50px;border-radius:12px;font-size:15px;font-weight:700;
+}
+#appRoot .ksseo .ksseo-switch button.active, .ksseo.ksseo .ksseo-switch button.active {
+  background:var(--cc-navy);color:#fff;border-color:var(--cc-navy);
+}
+#appRoot .ksseo .ksseo-tabs button, .ksseo.ksseo .ksseo-tabs button {
+  background:#e8edf5;color:var(--cc-ink);border:1px solid #c9d3e2;
+  font-size:14px;min-height:46px;font-weight:700;border-radius:12px;
+}
+#appRoot .ksseo .ksseo-tabs button.active, .ksseo.ksseo .ksseo-tabs button.active {
+  background:var(--cc-blue);color:#fff;border-color:var(--cc-blue);
+}
+#appRoot .ksseo .ksseo-next, .ksseo.ksseo .ksseo-next {
+  background:#eaf6ef;border:1px solid #a5d6b8;border-radius:16px;color:#123821;
+}
+#appRoot .ksseo .ksseo-next b, .ksseo.ksseo .ksseo-next b {color:var(--cc-green);font-size:13px}
+#appRoot .ksseo .ksseo-next span, .ksseo.ksseo .ksseo-next span {color:#123821;font-size:15px}
+#appRoot .ksseo :is(.ksseo-metric,.ksseo-box), .ksseo.ksseo :is(.ksseo-metric,.ksseo-box) {
+  border:1px solid var(--cc-line);border-radius:var(--cc-radius);
+  background:#fff;color:var(--cc-ink);box-shadow:var(--cc-shadow);
+}
+#appRoot .ksseo .ksseo-muted, .ksseo.ksseo .ksseo-muted,
+#appRoot .ksseo .ksseo-metric small, .ksseo.ksseo .ksseo-metric small {color:#485b73}
+#appRoot .ksseo :is(input,select,textarea),.ksseo.ksseo :is(input,select,textarea) {
+  background:#fff;color:var(--cc-ink);border-color:#9aabc1;font-size:16px;
+}
+#appRoot .ksseo :is(button,.ksseo-btn),.ksseo.ksseo :is(button,.ksseo-btn) {min-height:44px}
+/* Infrastructure uses exactly the same navy headers, muted text and panel outlines. */
+.infra-page .infra-hero{background:var(--cc-navy);color:#fff;border:1px solid #0c1728;border-radius:20px}
+.infra-page .infra-hero h1{color:#fff!important;font-weight:800}
+.infra-page .infra-hero p{color:#e3ebf6!important}
+.infra-page :is(.infra-card,.infra-panel,.infra-box){border-color:var(--cc-line);border-radius:var(--cc-radius)}
+/* Marketing intentionally retains its dark surfaces and readable light text. */
+.mk {--mk-text:#eff6ff;--mk-muted:#b4c4d9}
+.mk .mk-top h1{color:#fff!important;font-weight:800}
+.mk .mk-sub,.mk label{color:#cedaf0}
+.mk :is(input,select,textarea){color:#f8fbff;border-color:#60718a}
+.mk :is(input,select,textarea)::placeholder{color:#b6c5d8}
+/* AI Sales Control Center is a separate HTML document, so it receives this stylesheet directly. */
+html:has(body.ks-cc-page):not([data-theme=dark]) {
+ --bg:#f4f6fa;--panel:#fff;--soft:#edf2f8;--line:#cfd7e4;
+ --fg:#101f36;--mut:#475569;--acc:#155eef;--accbg:#e7efff;
+ --ok:#165b35;--okbg:#e7f5eb;--warn:#805200;--warnbg:#fff1d6;
+ --bad:#9f2b1e;--badbg:#fdeae6;--r:14px;
+}
+body.ks-cc-page{font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+.ks-cc-page header{background:var(--bg)}
+.ks-cc-page h1{font-weight:800;letter-spacing:-.025em}
+.ks-cc-page .card{border:1px solid var(--line);border-radius:16px;box-shadow:var(--cc-shadow)}
+.ks-cc-page :is(button,.tabs button){border-radius:12px;font-weight:650}
+.ks-cc-page :is(.sub,.muted){color:var(--mut)}
+.ks-cc-page #gate{border:1px solid var(--cc-line);background:var(--cc-panel);color:var(--cc-ink)}
+.ks-cc-page #gate .gate,.ks-cc-page #gate #go{display:none!important}
+.ks-cc-page #cc-sso-message{color:#30445f;font-size:15px;line-height:1.55}
+.ks-cc-page #cc-back{color:#155eef;text-decoration:underline;text-underline-offset:3px}
+@media(max-width:600px){
+  .ksseo.ksseo .ksseo-tabs{gap:7px}
+  .ksseo.ksseo .ksseo-tabs button{padding:0 14px;min-height:46px}
+  .ksseo.ksseo .ksseo-grid{gap:9px}
+  .ks-cc-page .wrap{padding-inline:14px}
+}
+/* AUDIT_20261027 tap targets */
+.ks-cc-page #cc-back{display:inline-flex;align-items:center;min-height:44px;padding:0 4px}
+.ks-cc-page .seg button,.ks-cc-page .filters button,.ks-cc-page .tabs button{min-height:44px}
+@media(prefers-reduced-motion:reduce){
+  #appRoot *, .ksseo *, .infra-page *, .mk *, .ks-cc-page * {scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}
+}

@@ -1,0 +1,87 @@
+{
+  "deployment": {
+    "id": "5f0d1349-4047-4f88-be2b-0abe74afab85",
+    "source": "api",
+    "strategy": "percentage",
+    "author_email": "zunaidi.ahmad@gmail.com",
+    "annotations": {
+      "workers/message": "Automatic deployment on upload.",
+      "workers/triggered_by": "upload"
+    },
+    "versions": [
+      {
+        "version_id": "3e6d5fad-0a07-4394-8fec-7c23076c91f9",
+        "percentage": 100
+      }
+    ],
+    "created_on": "2026-11-01T02:01:47.924498Z"
+  },
+  "sourceLength": 324434,
+  "source": null,
+  "version": {
+    "result": {
+      "id": "3e6d5fad-0a07-4394-8fec-7c23076c91f9",
+      "number": 40,
+      "metadata": {
+        "created_on": "2026-11-01T02:01:47.924498Z",
+        "source": "api",
+        "author_id": "625291cce4e11f22acecf432d4e15282",
+        "author_email": "zunaidi.ahmad@gmail.com",
+        "has_preview": true
+      },
+      "annotations": {
+        "workers/triggered_by": "upload"
+      },
+      "resources": {
+        "script": {
+          "etag": "1f7b959c093af8603a811eb3c28d6ef7e73b54a3194f44b9e4ece972ecc12e0b",
+          "handlers": [
+            "fetch"
+          ],
+          "last_deployed_from": "api"
+        },
+        "script_runtime": {
+          "assets": {
+            "html_handling": "none",
+            "not_found_handling": "single-page-application",
+            "headers": {
+              "version": 2,
+              "rules": {
+                "/*": {
+                  "set": {
+                    "cache-control": "no-store",
+                    "permissions-policy": "camera=(), microphone=(), geolocation=()",
+                    "referrer-policy": "no-referrer",
+                    "strict-transport-security": "max-age=31536000",
+                    "x-content-type-options": "nosniff",
+                    "x-frame-options": "DENY",
+                    "x-robots-tag": "noindex, nofollow"
+                  },
+                  "unset": []
+                }
+              }
+            },
+            "raw_headers": "/*\n  Cache-Control: no-store\n  X-Content-Type-Options: nosniff\n  Referrer-Policy: no-referrer\n  X-Frame-Options: DENY\n  Permissions-Policy: camera=(), microphone=(), geolocation=()\n  X-Robots-Tag: noindex, nofollow\n  Strict-Transport-Security: max-age=31536000\n",
+            "serve_directly": false,
+            "raw_run_worker_first": true,
+            "base_path": "/"
+          },
+          "compatibility_date": "2026-10-23",
+          "compatibility_flags": [
+            "nodejs_compat"
+          ],
+          "usage_model": "standard"
+        },
+        "bindings": [
+          {
+            "name": "ASSETS",
+            "type": "assets"
+          }
+        ]
+      }
+    },
+    "success": true,
+    "errors": [],
+    "messages": []
+  }
+}

@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="ms" data-lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>AI Sales Command Center</title>
+<style>
+/* AI Sales Command Center — ONE owner page (Hari ini / Follow-up / Ejen / Malam / Routing). Mobile-first, BM/EN, owner-only (the server enforces ai_is_owner()).
+   Four laws: JELAS (one "next action" card, status strip says AI #4 OFF and nothing auto-sends), MENARIK (calm colours, workspace chips, ring), MUDAH (one primary action per card,
+   confirm sheet, bottom tabs), MEMUASKAN (toast, progress ring, "semua beres" state). Read-only except the Follow-up Workbench actions (audited RPC). Nothing here sends a customer message. */
+:root{--bg:#faf9f6;--panel:#fff;--soft:#f3f1ec;--line:#dedad1;--fg:#1d1c1a;--mut:#66625b;--ok:#17703a;--okbg:#e3f3e8;--warn:#8a5a00;--warnbg:#fff1d6;--bad:#a8261d;--badbg:#fde7e4;--acc:#1f4fd8;--accbg:#e6edff;--hum:#6b3fa0;--humbg:#efe6fb;--r:12px;--gap:12px}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#141413;--panel:#1d1d1b;--soft:#262624;--line:#3a3935;--fg:#efede8;--mut:#a39f95;--ok:#6fd48f;--okbg:#17301f;--warn:#e8b64a;--warnbg:#33290f;--bad:#ff8b80;--badbg:#3a1714;--acc:#8fb0ff;--accbg:#16213f;--hum:#c7a3ff;--humbg:#2a1d3e}}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:0 16px 96px}
+header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:10px 0}
+.top{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+h1{font-size:19px;margin:0;font-weight:650;letter-spacing:-.01em}.sub{color:var(--mut);font-size:12.5px;margin:2px 0 0}
+h2{font-size:15.5px;margin:20px 0 8px;font-weight:650}
+.chips{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 10px;font-size:12.5px;background:var(--soft);color:var(--fg);border:1px solid var(--line);white-space:nowrap}
+.chip.ok{background:var(--okbg);color:var(--ok);border-color:transparent}.chip.warn{background:var(--warnbg);color:var(--warn);border-color:transparent}.chip.bad{background:var(--badbg);color:var(--bad);border-color:transparent}.chip.hum{background:var(--humbg);color:var(--hum);border-color:transparent}.chip.acc{background:var(--accbg);color:var(--acc);border-color:transparent}
+button,select,input,textarea{font:inherit;color:var(--fg)}
+button{min-height:44px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel);cursor:pointer}button:hover{background:var(--soft)}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--acc);outline-offset:1px}
+button.primary{background:var(--fg);color:var(--bg);border-color:var(--fg)}button.danger{border-color:var(--bad);color:var(--bad)}button.sm{min-height:40px;padding:4px 12px;font-size:14px}button[disabled]{opacity:.45;cursor:not-allowed}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}.seg button{border:0;border-radius:0;min-height:36px;padding:4px 12px;background:var(--panel)}.seg button[aria-pressed=true]{background:var(--fg);color:var(--bg)}
+.safe{background:var(--okbg);border:1px solid transparent;border-radius:var(--r);padding:8px 12px;font-size:12.5px;color:var(--ok);margin:10px 0;display:flex;gap:10px;flex-wrap:wrap}
+.safe.bad{background:var(--badbg);color:var(--bad)}.safe b{font-weight:650}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin-bottom:var(--gap)}
+.card.attn{border-left:5px solid var(--warn)}.card.hum{border-left:5px solid var(--hum)}.card.good{border-left:5px solid var(--ok)}.card.out{border-left:5px solid var(--mut);opacity:.9}
+.hero{background:var(--accbg);border:1px solid transparent;border-radius:var(--r);padding:16px;margin:12px 0;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.hero.done{background:var(--okbg)}.hero h2{margin:0 0 4px;font-size:17px}.hero p{margin:0;color:var(--mut);font-size:13.5px}
+.grid{display:grid;gap:var(--gap);grid-template-columns:1fr}@media(min-width:720px){.grid{grid-template-columns:1fr 1fr}}
+.lv{display:flex;gap:6px;margin:8px 0}.lv div{flex:1;text-align:center;border-radius:10px;padding:8px 2px;background:var(--soft)}.lv b{display:block;font-size:22px;line-height:1.1}.lv span{font-size:11.5px;color:var(--mut)}
+.lv .h b{color:var(--bad)}.lv .w b{color:var(--warn)}.lv .c b{color:var(--acc)}
+.meta{display:flex;gap:8px 12px;flex-wrap:wrap;color:var(--mut);font-size:12.5px}.who{font-size:16px;font-weight:650;margin:6px 0 2px}.who small{font-weight:400;color:var(--mut);font-size:12.5px}
+.row{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 0}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.filters button{min-height:36px;padding:2px 12px;border-radius:999px}.filters button[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.draft{margin-top:8px;background:var(--soft);border-radius:10px;padding:8px 10px;font-size:13.5px;white-space:pre-wrap}
+.steps{display:flex;gap:6px;margin:8px 0;align-items:center;flex-wrap:wrap}.step{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;border-radius:999px;padding:3px 10px;background:var(--soft);border:1px solid var(--line)}
+.step.succeeded{background:var(--okbg);color:var(--ok);border-color:transparent}.step.failed{background:var(--badbg);color:var(--bad);border-color:transparent}.step.running{background:var(--accbg);color:var(--acc);border-color:transparent}
+.ring{--p:0;width:64px;height:64px;border-radius:50%;background:conic-gradient(var(--ok) calc(var(--p)*1%),var(--soft) 0);display:grid;place-items:center;flex:0 0 auto}.ring i{width:48px;height:48px;border-radius:50%;background:var(--panel);display:grid;place-items:center;font-style:normal;font-weight:700;font-size:14px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--mut);font-weight:500;font-size:12.5px}.tablewrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--panel);border-top:1px solid var(--line);display:flex;justify-content:flex-start;gap:2px;padding:4px 4px calc(4px + env(safe-area-inset-bottom));overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch}nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{flex:1 0 auto;min-width:64px;padding:0 6px;border:0;background:none;min-height:50px;font-size:12.5px;border-radius:8px;display:grid;gap:1px;place-items:center}nav.tabs button[aria-selected=true]{color:var(--acc);font-weight:650;background:var(--accbg)}nav.tabs .ic{font-size:18px;line-height:1}
+@media(min-width:900px){nav.tabs{position:static;border:0;background:none;justify-content:flex-start;gap:6px;padding:8px 0}nav.tabs button{flex:0 0 auto;grid-auto-flow:column;gap:6px;padding:4px 16px;border:1px solid var(--line);background:var(--panel)}}
+.gate{display:grid;gap:8px;grid-template-columns:1fr;margin:10px 0}@media(min-width:720px){.gate{grid-template-columns:repeat(5,1fr);align-items:end}}
+.gate label{display:grid;gap:3px;font-size:12px;color:var(--mut)}.gate input,.gate select{min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;z-index:20}.scrim.on{display:block}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--panel);border-radius:18px 18px 0 0;padding:16px 16px 24px;max-height:86vh;overflow:auto;display:none;box-shadow:0 -8px 30px rgba(0,0,0,.25)}.sheet.on{display:block}
+@media(min-width:720px){.sheet{left:50%;transform:translateX(-50%);width:520px;bottom:5vh;border-radius:18px}}
+.sheet h3{margin:0 0 4px;font-size:17px}.sheet p{margin:4px 0 12px;color:var(--mut);font-size:13.5px}.sheet textarea{width:100%;min-height:70px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg)}
+.sheet .btns{display:flex;gap:8px;margin-top:14px;justify-content:flex-end;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:78px;transform:translateX(-50%) translateY(30px);background:var(--fg);color:var(--bg);padding:11px 18px;border-radius:999px;opacity:0;transition:.2s;z-index:30;font-size:14px;pointer-events:none;max-width:92vw;text-align:center}.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.srch{display:flex;gap:8px;margin:8px 0}.srch input{flex:1;min-height:44px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.sheet h4{margin:16px 0 6px;font-size:14px}.sheet .row select,.sheet .row input{min-height:40px;padding:6px 8px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}.sheet .row input{flex:1;min-width:120px}
+.why{margin:4px 0 0;padding-left:18px;font-size:13px;color:var(--mut)}.msg{border-radius:10px;padding:6px 10px;margin:6px 0;background:var(--soft);font-size:13.5px;white-space:pre-wrap}.msg.u{border-left:4px solid var(--acc)}.msg.a{border-left:4px solid var(--mut)}.msg small{color:var(--mut)}
+nav.tabs button span:last-child{font-size:11.5px}
+.hidden{display:none!important}.empty{color:var(--mut);padding:18px;text-align:center}.err{background:var(--badbg);color:var(--bad);border-radius:var(--r);padding:10px 12px;margin:10px 0}
+#gate .gate,#gate #go{display:none!important}
+#cc-back{display:inline-flex;margin:12px 0 16px;color:var(--acc);font-weight:650;text-decoration:none}
+</style>
+<link rel="stylesheet" href="/dashboard-unified-theme.css?v=20261027.1">
+<script src="/ks-session-sync.js?v=20261027.1"></script>
+<style>
+/* KS_MOBILE_AGENT_20261027: constrain content intrinsically; never hide page overflow. */
+.ks-cc-page .wrap{width:100%;min-width:0;padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
+.ks-cc-page :is(main,section,.grid,.card,.hero,.top,.srch,.row,.actions,.chips,.meta,.sheet){min-width:0;max-width:100%;overflow-wrap:anywhere}
+.ks-cc-page :is(.top,.hero,.grid,.card,.row,.actions,.meta,.chips,.srch)>*{min-width:0;max-width:100%}
+.ks-cc-page .grid{grid-template-columns:minmax(0,1fr)}
+.ks-cc-page .chip,.ks-cc-page .step{white-space:normal;overflow-wrap:anywhere}
+.ks-cc-page :is(button,input,select,textarea){min-width:0;max-width:100%;min-height:44px}
+.ks-cc-page button{white-space:normal;overflow-wrap:anywhere;min-width:44px}
+.ks-cc-page .srch input{width:0;min-width:0;flex:1 1 0}
+.ks-cc-page .srch button{flex:0 0 auto}
+.ks-cc-page .lv>div{min-width:0}
+.ks-cc-page .tablewrap{max-width:100%;min-width:0;overscroll-behavior-x:contain}
+.ks-cc-page .sheet{width:100%;max-width:100%;padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+.ks-cc-page .sheet :is(input,select,textarea){font-size:16px;width:100%}
+.ks-cc-page .sheet label{display:grid;gap:4px;margin:10px 0;min-width:0}
+.ks-cc-page .sheet .row :is(input,select){width:auto;flex:1 1 130px}
+.ks-cc-page .agent-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin-top:12px}
+.ks-cc-page .agent-grid .card{margin:0}
+.ks-cc-page .agent-grid dl{display:grid;grid-template-columns:80px minmax(0,1fr);font-size:13px;gap:5px;margin:10px 0}
+.ks-cc-page .agent-grid dt{color:var(--mut)}.ks-cc-page .agent-grid dd{margin:0;overflow-wrap:anywhere}
+.ks-cc-page nav.tabs{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));width:auto;max-width:1060px;margin:0 auto;border:1px solid var(--line);border-radius:20px;box-shadow:0 8px 28px rgba(16,31,54,.2);padding:6px;display:flex;flex-wrap:nowrap;gap:4px;overflow-x:auto;overflow-y:hidden;justify-content:flex-start;touch-action:pan-x pan-y;overscroll-behavior-x:contain;scroll-padding-inline:6px;-webkit-overflow-scrolling:touch}
+.ks-cc-page nav.tabs button{flex:0 0 76px;min-width:76px;min-height:52px;display:grid;padding:4px;touch-action:pan-x pan-y;user-select:none}
+.ks-cc-page .toast{bottom:calc(90px + env(safe-area-inset-bottom,0px))}
+@media(min-width:720px){.ks-cc-page .grid,.ks-cc-page .agent-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ks-cc-page .sheet{max-width:520px}}
+@media(min-width:900px){.ks-cc-page nav.tabs button{flex:1 0 100px;grid-auto-flow:column}}
+
+/* Owner access remains enforced by ai_is_owner; legacy login gate is permanently hidden in production. */
+.ks-cc-page #gate{display:none!important}
+#cc-progress{margin:14px 0;padding:9px 3px;color:var(--mut);font-size:14px;line-height:1.5}
+#cc-progress a{color:var(--acc);font-weight:650}
+#cc-progress button{margin:9px 0;display:inline-flex}
+</style>
+</head>
+<body class="ks-cc-page">
+<div class="wrap">
+<header><a id="cc-back" href="/">← Dashboard Kerja Sendiri</a><div class="top">
+  <div><h1 id="h1"></h1><p class="sub" id="asof"></p></div>
+  <div class="chips"><div class="seg" role="group" aria-label="Language"><button id="l-ms" aria-pressed="true">BM</button><button id="l-en" aria-pressed="false">EN</button></div><span class="chip" id="srcchip"></span></div>
+</div></header>
+
+<div id="gate" class="card"><b id="gt"></b><p id="cc-sso-message" role="status">Mengesahkan sesi dashboard...</p><p><a href="/">Kembali ke Dashboard</a></p>
+  <div class="gate">
+    <label><span id="gl-src"></span><select id="src"><option value="mock"></option><option value="live"></option></select></label>
+    <label class="liveonly"><span>Supabase URL</span><input id="url" autocomplete="off" placeholder="http://127.0.0.1:54321"></label>
+    <label class="liveonly"><span>Anon key</span><input id="anon" autocomplete="off"></label>
+    <label class="liveonly"><span>Email</span><input id="em" type="email" autocomplete="username"></label>
+    <label class="liveonly"><span id="gl-pw"></span><input id="pw" type="password" autocomplete="current-password"></label>
+  </div><button class="primary" id="go"></button><div id="gerr" class="err hidden" role="alert"></div></div>
+
+<main id="app">
+  <div id="cc-progress" role="status" aria-live="polite">Membuka Pusat Arahan Jualan AI…</div>
+  <div id="cc-data" class="hidden">
+  <div id="takaful-tools" class="card" style="display:none;border-left:4px solid #2355da;padding:14px"><div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between;align-items:center"><div><b>Takaful Keluarga</b><p class="sub" style="margin:4px 0">Leads, Inbox &amp; tetapan AI</p></div><a href="/takaful-keluarga/ai-persona" style="display:inline-flex;min-height:44px;padding:9px 12px;align-items:center;border:1px solid #2355da;border-radius:10px;text-decoration:none;color:#1d4ed8;font-weight:700">AI Persona &amp; Behaviour →</a></div></div>
+  <div id="safe"></div>
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+  <section id="p-today" role="tabpanel"></section>
+  <section id="p-leads" role="tabpanel" class="hidden"></section>
+  <section id="p-inbox" role="tabpanel" class="hidden"></section>
+  <section id="p-fu" role="tabpanel" class="hidden"></section>
+  <section id="p-agents" role="tabpanel" class="hidden"></section>
+  <section id="p-night" role="tabpanel" class="hidden"></section>
+  <section id="p-route" role="tabpanel" class="hidden"></section>
+  </div>
+</main>
+</div>
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script type="application/json" id="cc-config">{"mode":"production","base":"https://ldrvvpmxnhapsupdgjee.supabase.co","anon":"sb_publishable_62EhJqrdhyxXVPLkWfOFhg_utP6FD6s"}</script>
+<script type="application/json" id="mock-data">{"brief":{"contract":"brief-v1","brief_date":"2026-10-26","generated_at":"2026-10-25T18:03:00Z","brief":{"contract":"brief-v1","brief_date":"2026-10-26","workspaces":[{"workspace_id":"recond","business_name":"Abang Recond","levels":{"HOT":3,"WARM":7,"COLD":4,"UNKNOWN":9},"open_followups":4,"overdue_followups":2},{"workspace_id":"proton","business_name":"Proton","levels":{"HOT":1,"WARM":4,"COLD":2,"UNKNOWN":5},"open_followups":2,"overdue_followups":0}],"routing":{"active_24h":18,"human_owned":2,"opted_out":1},"agents":[],"ai4_deal_tracker":{"enabled":false},"needs_owner":[{"lead_ref":"L-3FA9C1","workspace_id":"recond","task_type":"follow_up","why":"overdue_followup","due_at":"2026-10-25T02:00:00Z"}],"risks":[]}},"followups":{"contract":"followup-workbench-v1","as_of":"2026-10-26T01:00:00Z","counts":{"suggested":5,"accepted":1,"done":3,"dismissed":1},"rows":[{"task_id":"t1","lead_ref":"L-3FA9C1","workspace_id":"recond","task_type":"follow_up","status":"suggested","due_at":"2026-10-25T02:00:00Z","overdue":true,"reason":"Minat Voxy (HOT) senyap 3 hari","suggested_text":"Salam tuan, Voxy 2018 masih ada. Nak saya aturkan viewing hujung minggu ni?","template_required":false,"send_state":"never","level":"HOT","interest_label":"Voxy","route_mode":"ai","window_open_now":true,"blockers":[]},{"task_id":"t2","lead_ref":"L-91B07E","workspace_id":"proton","task_type":"follow_up","status":"suggested","due_at":"2026-10-26T02:00:00Z","overdue":false,"reason":"Minat X50 (WARM) senyap 4 hari","suggested_text":null,"template_required":true,"send_state":"never","level":"WARM","interest_label":"X50","route_mode":"ai","window_open_now":false,"blockers":["window_closed_template_required"]},{"task_id":"t3","lead_ref":"L-7C22D4","workspace_id":"recond","task_type":"call_back","status":"accepted","due_at":null,"overdue":false,"reason":"Pelanggan minta dihubungi","suggested_text":null,"template_required":false,"send_state":"never","level":"HOT","interest_label":"Alphard","route_mode":"human","window_open_now":true,"blockers":["human_owns_conversation"]},{"task_id":"t4","lead_ref":"L-0D5E88","workspace_id":"recond","task_type":"follow_up","status":"suggested","due_at":null,"overdue":false,"reason":"Minat Noah (WARM) senyap 5 hari","suggested_text":null,"template_required":true,"send_state":"never","level":"WARM","interest_label":"Noah","route_mode":"opted_out","window_open_now":false,"blockers":["do_not_contact","window_closed_template_required"]}]},"agents":[{"agent_id":"recond_ai","workspace_id":"recond","business_name":"Abang Recond","enabled":true,"responder_kind":"builtin","responder_status":"ready","state":"runtime_ready","checked_at":"2026-10-25T18:03:00Z"},{"agent_id":"proton_ai","workspace_id":"proton","business_name":"Proton","enabled":true,"responder_kind":"builtin","responder_status":"ready","state":"runtime_ready","checked_at":"2026-10-25T18:03:00Z"},{"agent_id":"mymedik_ai","workspace_id":"mymedik","business_name":"myMedik","enabled":false,"responder_kind":null,"responder_status":"none","state":"registered","checked_at":null},{"agent_id":"rental_ai","workspace_id":"rental","business_name":"Sewa Kereta","enabled":true,"responder_kind":"edge_function","responder_status":"unknown","state":"not_ready","checked_at":null},{"agent_id":"demo_ai","workspace_id":"demo","business_name":"Demo","enabled":true,"responder_kind":"edge_function","responder_status":"error","state":"error","error_code":"health_call_failed","checked_at":"2026-10-25T18:03:00Z"}],"nightly":{"contract":"nightly-status-v1","schedule":"02:00 Asia/Kuala_Lumpur","runs":[{"run_id":"nightly-20261026-scheduled","run_date":"2026-10-26","trigger":"scheduled","status":"succeeded","resumed_count":0,"stages":[{"stage":"score","status":"succeeded","attempts":1},{"stage":"followups","status":"succeeded","attempts":1},{"stage":"brief","status":"succeeded","attempts":1},{"stage":"health","status":"succeeded","attempts":1}]},{"run_id":"nightly-20261025-scheduled","run_date":"2026-10-25","trigger":"scheduled","status":"failed","resumed_count":1,"stages":[{"stage":"score","status":"succeeded","attempts":1},{"stage":"followups","status":"failed","attempts":2,"error_code":"db_timeout"},{"stage":"brief","status":"pending","attempts":0},{"stage":"health","status":"pending","attempts":0}]}]},"routing":{"contract":"routing-center-v1","counters":{"active_conversations":18,"needs_owner":1,"human_takeover":2,"opted_out":1,"unassigned":0,"routing_errors":0}},"modules":{"contract":"modules-status-v1","agents":[{"agent_key":"agent_0_receptionist","enabled":false,"mode":"shadow"},{"agent_key":"agent_1_sales","enabled":false,"mode":"shadow"},{"agent_key":"agent_2_lead_manager","enabled":true,"mode":"shadow"},{"agent_key":"agent_3_followup_closer","enabled":true,"mode":"shadow"},{"agent_key":"agent_4_deal_tracker","enabled":false,"mode":"shadow"},{"agent_key":"agent_5_chief_of_staff","enabled":true,"mode":"shadow"}],"router":{"enabled":false,"mode":"shadow"},"gates":[{"gate_key":"agent4_advisory_rollout","passed":false}]},"agent4":{"contract":"agent4-status-v1","gate_passed":false,"enabled":false,"mode":"shadow","advisory_only":true,"can_switch_on":false},"usage":{"contract":"ai-usage-v1","total":{"calls":132,"tokens":98400,"cost_usd":0.1843,"errors":2},"daily":[]},"leads":{"total":3,"rows":[{"lead_id":"s-l1","lead_ref":"L-3FA9C1","name":"Contoh Ali (rekaan)","phone_masked":"•••••••0001","source":"AI Agent","status":"new","model_interest":"Voxy 2018","area":"Shah Alam","interests":[{"interest_id":"i1","workspace_id":"recond","label":"Voxy 2018","level":"HOT","stage":"engaged"}],"open_tasks":1,"route":{"conversation_id":"s-c1","mode":"ai","assigned_agent_id":"recond_ai"},"milestones":[]},{"lead_id":"s-l2","lead_ref":"L-91B07E","name":"Contoh Bob (rekaan)","phone_masked":"•••••••0002","source":"Meta Ads","status":"followup","model_interest":"Proton X50","area":"Bangi","interests":[{"interest_id":"i2","workspace_id":"proton","label":"X50","level":"WARM","stage":"new"}],"open_tasks":1,"route":{"conversation_id":"s-c2","mode":"human","assigned_agent_id":"proton_ai"},"milestones":[{"kind":"booking_rm500","status":"pending","workspace_id":"proton"}]},{"lead_id":"s-l3","lead_ref":"L-7C22D4","name":"Contoh Chen (rekaan)","phone_masked":"•••••••0003","source":"Organic","status":"new","model_interest":"Alphard / X50","area":"Ampang","interests":[{"interest_id":"i3","workspace_id":"recond","label":"Alphard","level":"UNKNOWN","stage":"new"},{"interest_id":"i4","workspace_id":"proton","label":"X50","level":"COLD","stage":"new"}],"open_tasks":0,"route":null,"milestones":[]}]},"details":{"s-l1":{"lead":{"lead_id":"s-l1","lead_ref":"L-3FA9C1","name":"Contoh Ali (rekaan)","phone":"60170000000","source":"AI Agent","status":"new","area":"Shah Alam","model_interest":"Voxy 2018","budget":"RM2k bulanan","notes":"Pelanggan rekaan untuk demo sahaja."},"interests":[{"interest_id":"i1","workspace_id":"recond","label":"Voxy 2018","level":"HOT","stage":"engaged","mentions":3,"evidence":{}}],"scores":[{"workspace_id":"recond","level":"HOT","confidence":0.82,"ruleset":"lead-manager-ws-v1","evidence":[1,2,3],"reasons":["Tanya stok dan harga","Minta viewing"]}],"milestones":[],"audit":[{"at":"2026-10-25T10:00:00Z","action":"crm_sync","actor_type":"system","reason":null}],"tasks":[],"conversations":[]},"s-l2":{"lead":{"lead_id":"s-l2","lead_ref":"L-91B07E","name":"Contoh Bob (rekaan)","phone":"60170000000","source":"Meta Ads","status":"followup","area":"Bangi","model_interest":"Proton X50","budget":"RM2k bulanan","notes":"Pelanggan rekaan untuk demo sahaja."},"interests":[{"interest_id":"i2","workspace_id":"proton","label":"X50","level":"WARM","stage":"new","mentions":3,"evidence":{}}],"scores":[{"workspace_id":"proton","level":"WARM","confidence":0.82,"ruleset":"lead-manager-ws-v1","evidence":[1,2,3],"reasons":["Tanya stok dan harga","Minta viewing"]}],"milestones":[{"kind":"booking_rm500","status":"pending","workspace_id":"proton","note":"Nota contoh"}],"audit":[{"at":"2026-10-25T10:00:00Z","action":"crm_sync","actor_type":"system","reason":null}],"tasks":[],"conversations":[]},"s-l3":{"lead":{"lead_id":"s-l3","lead_ref":"L-7C22D4","name":"Contoh Chen (rekaan)","phone":"60170000000","source":"Organic","status":"new","area":"Ampang","model_interest":"Alphard / X50","budget":"RM2k bulanan","notes":"Pelanggan rekaan untuk demo sahaja."},"interests":[{"interest_id":"i3","workspace_id":"recond","label":"Alphard","level":"UNKNOWN","stage":"new","mentions":3,"evidence":{}},{"interest_id":"i4","workspace_id":"proton","label":"X50","level":"COLD","stage":"new","mentions":3,"evidence":{}}],"scores":[{"workspace_id":"proton","level":"COLD","confidence":0.82,"ruleset":"lead-manager-ws-v1","evidence":[1,2,3],"reasons":["Tanya stok dan harga","Minta viewing"]}],"milestones":[],"audit":[{"at":"2026-10-25T10:00:00Z","action":"crm_sync","actor_type":"system","reason":null}],"tasks":[],"conversations":[]}},"inbox":{"unmapped_conversations":2,"rows":[{"conversation_id":"s-c1","ref":"C-A1B2C3","lead_name":"Contoh Ali (rekaan)","mode":"ai","agent_name":"Abang Recond AI","last_inbound_at":"2026-10-26T01:10:00Z","last_message":{"role":"user","snippet":"Voxy 2018 ada stok tak?"}},{"conversation_id":"s-c2","ref":"C-D4E5F6","lead_name":"Contoh Bob (rekaan)","mode":"human","agent_name":"Proton AI","last_inbound_at":"2026-10-25T09:00:00Z","last_message":{"role":"assistant","snippet":"Boleh tuan, saya bantu carikan Saga."}},{"conversation_id":"s-c3","ref":"C-778899","lead_name":"Contoh Dina (rekaan)","mode":"awaiting_owner","agent_name":null,"last_inbound_at":"2026-10-24T09:00:00Z","last_message":{"role":"user","snippet":"Boleh cakap dengan orang?"}}]},"convs":{"s-c1":{"route":{"mode":"ai"},"lead_name":"Contoh Ali (rekaan)","messages":[{"role":"user","content":"Voxy 2018 ada stok tak?","created_at":"2026-10-26T01:10:00Z"}],"decisions":[{"kind":"route","reason_code":"alias:voxy","decided_at":"2026-10-26T01:10:00Z"}]},"s-c2":{"route":{"mode":"human"},"lead_name":"Contoh Bob (rekaan)","messages":[{"role":"user","content":"Boleh tuan, saya bantu carikan Saga.","created_at":"2026-10-25T09:00:00Z"}],"decisions":[{"kind":"route","reason_code":"alias:voxy","decided_at":"2026-10-25T09:00:00Z"}]},"s-c3":{"route":{"mode":"awaiting_owner"},"lead_name":"Contoh Dina (rekaan)","messages":[{"role":"user","content":"Boleh cakap dengan orang?","created_at":"2026-10-24T09:00:00Z"}],"decisions":[{"kind":"route","reason_code":"alias:voxy","decided_at":"2026-10-24T09:00:00Z"}]}}}</script>
+<script>
+"use strict";
+var I18N={ms:{h1:'Pusat Arahan Jualan AI',gt:'Log masuk owner',src:'Sumber data',mock:'CONTOH (data rekaan)',live:'LIVE (Supabase production)',pw:'Kata laluan',go:'Buka',
+  sample:'CONTOH — data rekaan, bukan pelanggan sebenar',livechip:'LIVE',lang:'Bahasa',
+  safe1:'AI #4 MATI',safe2:'Tiada mesej pelanggan dihantar dari halaman ini',safe3:'Booking, bayaran & loan TIDAK pernah disahkan oleh AI',ai4on:'AMARAN: AI #4 dilaporkan HIDUP — hentikan dan semak',
+  tToday:'Hari ini',tFu:'Follow-up',tAgents:'Ejen',tNight:'Malam',tRoute:'Routing',
+  next:'Tindakan seterusnya',allclear:'Semua beres 🎉',allclearp:'Tiada follow-up lewat, tiada ejen bermasalah. Rehat sekejap.',
+  overdueN:'{n} follow-up lewat',overdueP:'Mulakan dengan yang paling panas (HOT).',open:'Buka Follow-up',
+  hot:'PANAS',warm:'HANGAT',cold:'SEJUK',unk:'TIDAK PASTI',openFu:'follow-up terbuka',overdue:'lewat',
+  needs:'Perlu perhatian owner',risks:'Risiko',norisk:'Tiada risiko dikesan',
+  lastnight:'Larian malam terakhir (02:00 MYT)',stage_score:'Skor',stage_followups:'Follow-up',stage_brief:'Ringkasan',stage_health:'Kesihatan',
+  fuTitle:'Follow-up Workbench',fuNote:'Cadangan sahaja. SA hantar sendiri; sistem tidak menghantar apa-apa.',all:'Semua',doneToday:'selesai',
+  accept:'Terima',finish:'Selesai',dismiss:'Tolak',copy:'Salin draf',noDraft:'Tiada draf — perlu template berdaftar (tetingkap 24j tutup)',
+  b_do_not_contact:'Jangan hubungi',b_window_closed_template_required:'Perlu template (24j tutup)',b_human_owns_conversation:'SA pegang perbualan',
+  overdueTag:'LEWAT',dueTag:'Tarikh',confirmT:'Sahkan tindakan',note:'Nota (pilihan)',cancel:'Batal',confirm:'Sahkan',
+  t_acc:'Diterima ✔',t_done:'Bagus! Satu lagi selesai ✔',t_dis:'Ditolak',t_copied:'Draf disalin',t_err:'Gagal',t_sim:' (contoh sahaja)',emptyFu:'Tiada follow-up dalam senarai ini.',
+  agTitle:'Kesediaan ejen',ag_registered:'Berdaftar (OFF)',ag_enabled:'Dihidupkan',ag_runtime_ready:'Sedia runtime',ag_not_ready:'Belum sedia',ag_error:'Ralat',
+  agHelp:'Ejen yang dihidupkan tanpa responder terbukti TIDAK menerima pelanggan.',checked:'Disemak',never:'belum',
+  nightTitle:'Larian malam',runs:'larian',resumed:'disambung semula',schedule:'Jadual',attempts:'cubaan',
+  rtTitle:'Routing ringkas',active:'Aktif 24j',needsOwner:'Perlu owner',human:'SA ambil alih',optout:'Tidak mahu dihubungi',unassigned:'Belum ditugaskan',errors:'Ralat hantaran',openRouting:'Buka Routing Center',
+  sample2:'Mod CONTOH: tindakan hanya simulasi dalam pelayar.',loading:'Memuatkan…',none:'—',tLeads:'Leads',tInbox:'Inbox',leadsTitle:'Semua leads mengikut perniagaan',leadsNote:'Skor & bukti dari Lead Manager. Nombor telefon dimaskkan dalam senarai; butiran penuh hanya dalam kad lead (owner sahaja).',searchLead:'Cari nama, telefon atau model',search:'Cari',leadsCount:'lead',emptyLeads:'Tiada lead sepadan.',openLead:'Buka lead',interestsT:'Minat & bukti',noEvidence:'Belum ada skor dari Lead Manager untuk minat ini.',confidence:'Keyakinan',evidenceN:'bukti',overrideT:'Tukar tahap',clearOverride:'Padam override',reasonReq:'Sebab (wajib)',overrideSave:'Simpan tahap',milestonesT:'Booking RM500 · Loan · Delivery (manual)',msAiNever:'AI TIDAK PERNAH mengesahkan booking, bayaran, loan atau penghantaran. Hanya anda, dengan nota.',workspaceL:'Perniagaan',k_booking_rm500:'Booking RM500',k_loan:'Loan',k_delivery:'Delivery',ms_none:'belum direkod',ms_pending:'Belum',ms_confirmed:'Disahkan owner',ms_cancelled:'Dibatalkan',noteReq:'Nota (wajib; siapa sahkan apa)',msSave:'Simpan',auditT:'Jejak audit',close:'Tutup',t_saved:'Disimpan ✔',m_ai:'AI jawab',m_human:'SA ambil alih',m_awaiting_owner:'Perlu owner',m_opted_out:'Tidak mahu dihubungi',inboxTitle:'Inbox WhatsApp',inboxNote:'Dashboard ini TIDAK menghantar mesej. Balas pelanggan melalui WhatsApp anda; "Ambil alih" hanya menghentikan AI untuk perbualan itu.',f_all:'Semua',f_needs_owner:'Perlu owner',f_human:'SA pegang',f_ai:'AI jawab',f_opted_out:'Tak mahu dihubungi',unmappedN:'{n} perbualan belum dapat dipadankan dengan lead (tidak digabung tanpa bukti tepat).',emptyInbox:'Tiada perbualan dalam penapis ini.',openConv:'Buka perbualan',msgsT:'Mesej terkini',noMsgs:'Tiada mesej.',decisionsT:'Keputusan routing',takeover:'Ambil alih',release:'Pulangkan kepada AI',takeoverWarn:'AI berhenti menjawab perbualan ini sehingga anda pulangkan.',releaseWarn:'AI WhatsApp sedia ada akan menjawab semula perbualan ini.',optoutNote:'Pelanggan tidak mahu dihubungi — tiada tindakan dibenarkan.',t_took:'Perbualan diambil alih ✔',t_released:'Dipulangkan kepada AI ✔',modulesT:'Kawalan modul AI',modulesNote:'Suis modul dikawal owner sahaja dan direkod dalam audit. Tiada suis di sini menghantar mesej pelanggan.',modOn:'HIDUP',modOff:'MATI',switchOn:'Hidupkan',switchOff:'Matikan',toggleWarn:'Tindakan ini direkod dalam audit. Tiada mesej pelanggan dihantar.',liveLocked:'LIVE terkunci',liveLockedNote:'Kod integrasi WhatsApp & KC3 sudah ada. LIVE kekal terkunci sehingga ujian release gate disahkan dan owner beri kelulusan berasingan.',ai1Note:'Dikawal oleh sistem WhatsApp sedia ada — tidak diubah dari sini.',advisoryOnly:'Nasihat sahaja',gateOpen:'Gate dibuka',gateClosed:'Gate ditutup',ai4Note:'AI #4 tidak boleh mengesahkan booking RM500, bayaran, loan atau penghantaran. Ia hanya dihidupkan selepas gate rollout dilulus oleh owner.',crmT:'Segerak data CRM',crmNote:'Padankan perbualan WhatsApp ↔ lead dengan bukti tepat sahaja, bina routing & minat. Tidak menulis jadual lama dan tidak menghantar apa-apa.',crmDry:'Semak dahulu (dry-run)',crmApply:'Segerak sekarang',crmResult:'Hasil',usageT:'Penggunaan AI',calls:'panggilan',prodchip:'PRODUCTION',idle:'Sesi tamat kerana tidak aktif. Log masuk semula.',nobrief:'Belum ada analisis AI',nobriefp:'Ringkasan Chief of Staff belum pernah dijana dan modul AI #2/#3/#5 masih MATI. Tiada follow-up di sini belum bermaksud semua beres.',nonight:'Belum ada larian malam direkodkan.',gtp:'Log masuk owner (kerjasendiri.my)'},
+ en:{h1:'AI Sales Command Center',gt:'Owner sign-in',src:'Data source',mock:'SAMPLE (synthetic data)',live:'LIVE (production Supabase)',pw:'Password',go:'Open',
+  sample:'SAMPLE — synthetic data, not real customers',livechip:'LIVE',lang:'Language',
+  safe1:'AI #4 OFF',safe2:'No customer message is sent from this page',safe3:'Booking, payment & loan are NEVER confirmed by AI',ai4on:'WARNING: AI #4 reported ON — stop and review',
+  tToday:'Today',tFu:'Follow-up',tAgents:'Agents',tNight:'Nightly',tRoute:'Routing',
+  next:'Next action',allclear:'All clear 🎉',allclearp:'No overdue follow-ups and no agent problems. Take a breath.',
+  overdueN:'Overdue follow-ups: {n}',overdueP:'Start with the hottest (HOT).',open:'Open Follow-up',
+  hot:'HOT',warm:'WARM',cold:'COLD',unk:'UNKNOWN',openFu:'open follow-ups',overdue:'overdue',
+  needs:'Needs owner attention',risks:'Risks',norisk:'No risks detected',
+  lastnight:'Last nightly run (02:00 MYT)',stage_score:'Score',stage_followups:'Follow-ups',stage_brief:'Brief',stage_health:'Health',
+  fuTitle:'Follow-up Workbench',fuNote:'Suggestions only. The SA sends manually; the system sends nothing.',all:'All',doneToday:'done',
+  accept:'Accept',finish:'Done',dismiss:'Dismiss',copy:'Copy draft',noDraft:'No draft — a registered template is required (24h window closed)',
+  b_do_not_contact:'Do not contact',b_window_closed_template_required:'Template needed (24h closed)',b_human_owns_conversation:'SA owns the chat',
+  overdueTag:'OVERDUE',dueTag:'Due',confirmT:'Confirm action',note:'Note (optional)',cancel:'Cancel',confirm:'Confirm',
+  t_acc:'Accepted ✔',t_done:'Nice! One more done ✔',t_dis:'Dismissed',t_copied:'Draft copied',t_err:'Failed',t_sim:' (sample only)',emptyFu:'No follow-ups in this list.',
+  agTitle:'Agent readiness',ag_registered:'Registered (OFF)',ag_enabled:'Enabled',ag_runtime_ready:'Runtime ready',ag_not_ready:'Not ready',ag_error:'Error',
+  agHelp:'An enabled agent without a proven responder does NOT receive customers.',checked:'Checked',never:'never',
+  nightTitle:'Nightly runs',runs:'runs',resumed:'resumed',schedule:'Schedule',attempts:'attempts',
+  rtTitle:'Routing summary',active:'Active 24h',needsOwner:'Needs owner',human:'SA took over',optout:'Opted out',unassigned:'Unassigned',errors:'Send errors',openRouting:'Open Routing Center',
+  sample2:'SAMPLE mode: actions are simulated in the browser only.',loading:'Loading…',none:'—',tLeads:'Leads',tInbox:'Inbox',leadsTitle:'Leads by business',leadsNote:'Scores & evidence from the Lead Manager. Phone numbers are masked in the list; full details only in the lead card (owner only).',searchLead:'Search name, phone or model',search:'Search',leadsCount:'leads',emptyLeads:'No matching leads.',openLead:'Open lead',interestsT:'Interests & evidence',noEvidence:'No Lead Manager score for this interest yet.',confidence:'Confidence',evidenceN:'evidence',overrideT:'Change level',clearOverride:'Clear override',reasonReq:'Reason (required)',overrideSave:'Save level',milestonesT:'Booking RM500 · Loan · Delivery (manual)',msAiNever:'AI NEVER confirms a booking, payment, loan or delivery. Only you, with a note.',workspaceL:'Business',k_booking_rm500:'Booking RM500',k_loan:'Loan',k_delivery:'Delivery',ms_none:'not recorded',ms_pending:'Pending',ms_confirmed:'Confirmed by owner',ms_cancelled:'Cancelled',noteReq:'Note (required; who confirmed what)',msSave:'Save',auditT:'Audit trail',close:'Close',t_saved:'Saved ✔',m_ai:'AI replies',m_human:'SA took over',m_awaiting_owner:'Needs owner',m_opted_out:'Opted out',inboxTitle:'WhatsApp Inbox',inboxNote:'This dashboard does NOT send messages. Reply to customers from your WhatsApp; "Take over" only stops the AI for that conversation.',f_all:'All',f_needs_owner:'Needs owner',f_human:'SA owns',f_ai:'AI replies',f_opted_out:'Opted out',unmappedN:'{n} conversations could not be matched to a lead (never merged without exact evidence).',emptyInbox:'No conversations in this filter.',openConv:'Open conversation',msgsT:'Latest messages',noMsgs:'No messages.',decisionsT:'Routing decisions',takeover:'Take over',release:'Hand back to AI',takeoverWarn:'The AI stops answering this conversation until you hand it back.',releaseWarn:'The existing WhatsApp AI will answer this conversation again.',optoutNote:'The customer opted out — no action is allowed.',t_took:'Conversation taken over ✔',t_released:'Handed back to AI ✔',modulesT:'AI module control',modulesNote:'Module switches are owner-only and audited. No switch here sends a customer message.',modOn:'ON',modOff:'OFF',switchOn:'Switch on',switchOff:'Switch off',toggleWarn:'This action is audited. No customer message is sent.',liveLocked:'LIVE locked',liveLockedNote:'WhatsApp & KC3 integration code is present. LIVE stays locked until release-gate testing is verified and separately approved by the owner.',ai1Note:'Controlled by the existing WhatsApp system — not changed from here.',advisoryOnly:'Advisory only',gateOpen:'Gate open',gateClosed:'Gate closed',ai4Note:'AI #4 can never confirm a RM500 booking, payment, loan or delivery. It can only be switched on after the owner passes the rollout gate.',crmT:'CRM sync',crmNote:'Match WhatsApp conversations to leads by exact evidence only; build routing & interests. Writes no legacy table and sends nothing.',crmDry:'Check first (dry-run)',crmApply:'Sync now',crmResult:'Result',usageT:'AI usage',calls:'calls',prodchip:'PRODUCTION',idle:'Session ended after inactivity. Please sign in again.',nobrief:'No AI analysis yet',nobriefp:'The Chief of Staff brief has never been generated and AI #2/#3/#5 are OFF. An empty list here does not mean everything is fine.',nonight:'No nightly run recorded yet.',gtp:'Owner sign-in (kerjasendiri.my)'}};
+var lang='ms',D=null,live=null,tok=null,tab='today',wsFilter='all',doneLocal=0;
+var $=function(i){return document.getElementById(i)};
+var CFG={mode:'dev'};try{CFG=JSON.parse($('cc-config').textContent)}catch(e){}
+var PROD=(CFG.mode==='production'||CFG.mode==='staging');
+var T=function(k,n){var s=(I18N[lang]||{})[k];s=s==null?k:s;return n==null?s:s.replace('{n}',n)};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+function toast(t){var e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(function(){e.classList.remove('on')},2600)}
+function dt(iso){if(!iso)return T('none');try{return new Date(iso).toLocaleString(lang==='ms'?'ms-MY':'en-GB',{timeZone:'Asia/Kuala_Lumpur',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}catch(e){return iso}}
+// ---------- data layer ----------
+async function rpc(fn,body){
+  if(!live)throw new Error('mock');
+  var r=await fetch(live.url+'/rest/v1/rpc/'+fn,{method:'POST',headers:{'apikey':live.anon,'Authorization':'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify(body||{}),signal:AbortSignal.timeout(12000)});
+  var j=await r.json().catch(function(){return null});
+  if(!r.ok)throw new Error((j&&(j.message||j.error))||('HTTP '+r.status));return j;
+}
+async function loadAll(){
+  if(!live){D=JSON.parse($('mock-data').textContent);MOCKX=JSON.parse($('mock-data').textContent);return}
+  var o={};
+  var results=await Promise.all([rpc('ai_cos_brief_latest',{}),rpc('ai_followup_workbench',{p_status:'open',p_limit:200}),rpc('ai_agent_readiness',{}),rpc('ai_nightly_status',{p_days:14}),rpc('ai_routing_center_snapshot',{p_hours:24})]);
+  o.brief=results[0];o.followups=results[1];o.agents=results[2];o.nightly=results[3];o.routing=results[4];
+  if(!o.followups||o.followups.contract!=='followup-workbench-v1')throw new Error('bad_contract:followup');
+  if(!o.brief||o.brief.contract!=='brief-v1')throw new Error('bad_contract:brief');
+  var extra=await Promise.allSettled([rpc('ai_modules_status',{}),rpc('ai_agent4_status',{}),rpc('ai_owner_ai_usage',{p_days:14}),rpc('ilindung_command_metrics',{})]);
+  o.modules=extra[0].status==='fulfilled'?extra[0].value:null;
+  o.agent4=extra[1].status==='fulfilled'?extra[1].value:null;
+  o.usage=extra[2].status==='fulfilled'?extra[2].value:null;
+  o.ilindung=extra[3].status==='fulfilled'?extra[3].value:null;
+  D=o;
+}
+async function act(taskId,to,note){
+  if(!live){var r=(D.followups.rows||[]).filter(function(x){return x.task_id===taskId})[0];if(r){if(to==='done'||to==='dismissed'){D.followups.rows=D.followups.rows.filter(function(x){return x.task_id!==taskId})}else r.status=to}if(to==='done')doneLocal++;return}
+  await rpc('ai_task_resolve',{p_task:taskId,p_to:to,p_note:note||null});
+  if(to==='done')doneLocal++;
+  await loadAll();
+}
+// ---------- rendering ----------
+var TABS=[['today','tToday','◎'],['leads','tLeads','☰'],['inbox','tInbox','✉'],['fu','tFu','✓'],['agents','tAgents','⚙'],['night','tNight','☾'],['route','tRoute','⇄']];
+function renderTabs(){
+ var nav=$('tabs');
+ if(!nav.children.length){nav.innerHTML=TABS.map(function(t){return '<button role="tab" data-tab="'+t[0]+'" aria-controls="p-'+t[0]+'"><span class="ic" aria-hidden="true">'+t[2]+'</span><span></span></button>'}).join('');
+ nav.addEventListener('click',function(e){var b=e.target.closest('[data-tab]');if(b){tab=b.dataset.tab;show()}});
+ nav.addEventListener('keydown',function(e){var bs=Array.from(nav.children),i=bs.indexOf(document.activeElement);if(i<0)return;var n=e.key==='ArrowRight'?i+1:e.key==='ArrowLeft'?i-1:e.key==='Home'?0:e.key==='End'?bs.length-1:null;if(n!==null){e.preventDefault();var b=bs[(n+bs.length)%bs.length];tab=b.dataset.tab;show();b.focus({preventScroll:true})}});
+ }
+ TABS.forEach(function(t,i){var b=nav.children[i];b.setAttribute('aria-selected',tab===t[0]);b.tabIndex=tab===t[0]?0:-1;b.lastChild.textContent=T(t[1])});
+ if(renderTabs._selected!==tab){renderTabs._selected=tab;requestAnimationFrame(function(){var b=nav.querySelector('[aria-selected=true]');if(!b)return;var r=b.getBoundingClientRect(),n=nav.getBoundingClientRect();if(r.left<n.left+6||r.right>n.right-6)nav.scrollBy({left:r.left-n.left-(nav.clientWidth-r.width)/2,behavior:'auto'})})}
+}
+async function show(){['today','leads','inbox','fu','agents','night','route'].forEach(function(k){$('p-'+k).classList.toggle('hidden',k!==tab)});renderTabs();render();await ensureTab();if(tab==='leads')renderLeads();if(tab==='inbox')renderInbox()}
+function lvChip(l){var c=l==='HOT'?'bad':l==='WARM'?'warn':l==='COLD'?'acc':'';return '<span class="chip '+c+'">'+esc(T(l==='HOT'?'hot':l==='WARM'?'warm':l==='COLD'?'cold':'unk'))+'</span>'}
+function rows(){return(D.followups&&D.followups.rows)||[]}
+function overdueRows(){return rows().filter(function(r){return r.overdue})}
+function renderSafe(){var b=D.brief&&D.brief.brief,ai4=b&&b.ai4_deal_tracker&&b.ai4_deal_tracker.enabled;
+  $('safe').innerHTML=ai4?'<div class="safe bad"><b>⚠ '+esc(T('ai4on'))+'</b></div>':'<div class="safe"><span><b>● '+esc(T('safe1'))+'</b></span><span>'+esc(T('safe2'))+'</span><span>'+esc(T('safe3'))+'</span></div>'}
+function stagesHtml(stages){return '<div class="steps">'+(stages||[]).map(function(s){return '<span class="step '+esc(s.status)+'" title="'+esc(s.status)+(s.error_code?' · '+esc(s.error_code):'')+' · '+esc(s.attempts)+' '+esc(T('attempts'))+'">'+({succeeded:'✔',failed:'✖',running:'…',pending:'○'}[s.status]||'○')+' '+esc(T('stage_'+s.stage))+'</span>'}).join('')+'</div>'}
+function renderToday(){
+  var b=D.brief&&D.brief.brief,od=overdueRows().slice().sort(function(a,b2){return (a.level==='HOT'?0:1)-(b2.level==='HOT'?0:1)}),h='';
+  if(D.ilindung){h+='<div class="card"><h2>Takaful Keluarga</h2><p>'+esc(D.ilindung.leads||0)+' leads · '+esc(D.ilindung.tokens||0)+' tokens</p><p>Sumber: '+esc(JSON.stringify(D.ilindung.sources||{}))+'</p><p>Status / conversion manual: '+esc(JSON.stringify(D.ilindung.statuses||{}))+'</p><p>WhatsApp automatik: '+(D.ilindung.automatic_whatsapp?'ON':'OFF')+'. Klik daftar tidak dianggap pendaftaran berjaya.</p></div>';}
+  var bad=(D.agents||[]).filter(function(a){return a.enabled&&a.state!=='runtime_ready'});
+  if(od.length){h+='<div class="hero"><div><h2>'+esc(T('overdueN',od.length))+'</h2><p>'+esc(T('overdueP'))+'</p></div><button class="primary" id="go-fu">'+esc(T('open'))+' →</button></div>'}
+  else if(bad.length){h+='<div class="hero"><div><h2>'+esc(bad.length+' '+T('ag_not_ready').toLowerCase())+'</h2><p>'+esc(T('agHelp'))+'</p></div><button class="primary" id="go-ag">'+esc(T('tAgents'))+' →</button></div>'}
+  else if(!b)h+='<div class="hero" data-state="no-brief"><div><h2>'+esc(T('nobrief'))+'</h2><p>'+esc(T('nobriefp'))+'</p></div><button class="primary" id="go-ag">'+esc(T('tAgents'))+' →</button></div>';
+  else h+='<div class="hero done"><div><h2>'+esc(T('allclear'))+'</h2><p>'+esc(T('allclearp'))+'</p></div></div>';
+  if(!b){h+='<div class="empty">'+esc(T('none'))+'</div>'}
+  else{
+    h+='<div class="grid">'+(b.workspaces||[]).map(function(w){var L=w.levels||{};return '<div class="card"><div class="who">'+esc(w.business_name||w.workspace_id)+' <small>'+esc(w.workspace_id)+'</small></div><div class="lv"><div class="h"><b>'+esc(L.HOT||0)+'</b><span>'+esc(T('hot'))+'</span></div><div class="w"><b>'+esc(L.WARM||0)+'</b><span>'+esc(T('warm'))+'</span></div><div class="c"><b>'+esc(L.COLD||0)+'</b><span>'+esc(T('cold'))+'</span></div><div><b>'+esc(L.UNKNOWN||0)+'</b><span>'+esc(T('unk'))+'</span></div></div><div class="meta"><span>'+esc(w.open_followups||0)+' '+esc(T('openFu'))+'</span><span>'+esc(w.overdue_followups||0)+' '+esc(T('overdue'))+'</span></div></div>'}).join('')+'</div>';
+    h+='<h2>'+esc(T('needs'))+'</h2>'+((b.needs_owner||[]).length?(b.needs_owner||[]).map(function(n){return '<div class="card attn"><div class="who">'+esc(n.lead_ref)+' <small>'+esc(n.workspace_id)+' · '+esc(n.task_type)+'</small></div><div class="meta"><span>'+esc(T('overdueTag'))+' · '+esc(dt(n.due_at))+'</span></div></div>'}).join(''):'<div class="empty">'+esc(T('allclear'))+'</div>');
+    h+='<h2>'+esc(T('risks'))+'</h2><div class="chips">'+((b.risks||[]).length?(b.risks||[]).map(function(r){return '<span class="chip warn">'+esc(r)+'</span>'}).join(''):'<span class="chip ok">'+esc(T('norisk'))+'</span>')+'</div>'}
+  var last=D.nightly&&D.nightly.runs&&D.nightly.runs[0];
+  if(last)h+='<h2>'+esc(T('lastnight'))+'</h2><div class="card '+(last.status==='succeeded'?'good':'attn')+'"><div class="meta"><span>'+esc(last.run_date)+'</span><span>'+esc(last.status)+'</span></div>'+stagesHtml(last.stages)+'</div>';
+  $('p-today').innerHTML=h;
+  if($('go-fu'))$('go-fu').onclick=function(){tab='fu';show()};if($('go-ag'))$('go-ag').onclick=function(){tab='agents';show()};
+}
+function renderFu(){
+  var all=rows(),wss=[];all.forEach(function(r){if(r.workspace_id&&wss.indexOf(r.workspace_id)<0)wss.push(r.workspace_id)});
+  var list=all.filter(function(r){return wsFilter==='all'||r.workspace_id===wsFilter});
+  var c=(D.followups&&D.followups.counts)||{},done=(c.done||0)+doneLocal,total=done+all.length,pct=total?Math.round(done*100/total):100;
+  var h='<h2>'+esc(T('fuTitle'))+'</h2><p class="sub">'+esc(T('fuNote'))+'</p><div class="card" style="display:flex;gap:14px;align-items:center"><div class="ring" style="--p:'+pct+'"><i>'+pct+'%</i></div><div><b>'+done+' / '+total+'</b> '+esc(T('doneToday'))+'</div></div>';
+  h+='<div class="filters" role="group"><button data-ws="all" aria-pressed="'+(wsFilter==='all')+'">'+esc(T('all'))+' ('+all.length+')</button>'+wss.map(function(w){return '<button data-ws="'+esc(w)+'" aria-pressed="'+(wsFilter===w)+'">'+esc(w)+'</button>'}).join('')+'</div>';
+  if(!list.length)h+='<div class="empty">'+esc(T('emptyFu'))+'</div>';
+  list.forEach(function(r){
+    var blockers=(r.blockers||[]),dnc=blockers.indexOf('do_not_contact')>=0;
+    h+='<article class="card '+(dnc?'out':r.overdue?'attn':blockers.indexOf('human_owns_conversation')>=0?'hum':'')+'" data-task="'+esc(r.task_id)+'"><div class="chips">'+(r.level?lvChip(r.level):'')+'<span class="chip">'+esc(r.workspace_id||T('none'))+'</span>'+(r.overdue?'<span class="chip bad">'+esc(T('overdueTag'))+'</span>':'')+blockers.map(function(b){return '<span class="chip '+(b==='do_not_contact'?'bad':b==='human_owns_conversation'?'hum':'warn')+'">'+esc(T('b_'+b))+'</span>'}).join('')+'</div>'
+     +'<div class="who">'+esc(r.lead_ref)+' <small>'+esc(r.interest_label||'')+' · '+esc(r.task_type)+'</small></div><div class="meta"><span>'+esc(r.reason||'')+'</span><span>'+esc(T('dueTag'))+': '+esc(dt(r.due_at))+'</span></div>'
+     +(r.suggested_text?'<div class="draft">'+esc(r.suggested_text)+'</div>':'<div class="draft" style="color:var(--mut)">'+esc(T('noDraft'))+'</div>')
+     +'<div class="actions">'+(r.status==='suggested'&&!dnc?'<button class="primary sm" data-a="accepted">'+esc(T('accept'))+'</button>':'')+(r.status==='accepted'?'<button class="primary sm" data-a="done">'+esc(T('finish'))+'</button>':'')+'<button class="sm danger" data-a="dismissed">'+esc(T('dismiss'))+'</button>'+(r.suggested_text&&!dnc?'<button class="sm" data-a="copy">'+esc(T('copy'))+'</button>':'')+'</div></article>'});
+  if(!live)h+='<p class="sub">'+esc(T('sample2'))+'</p>';
+  $('p-fu').innerHTML=h;
+  Array.prototype.forEach.call($('p-fu').querySelectorAll('[data-ws]'),function(b){b.onclick=function(){wsFilter=b.dataset.ws;renderFu()}});
+  Array.prototype.forEach.call($('p-fu').querySelectorAll('[data-a]'),function(b){b.onclick=function(){var id=b.closest('article').dataset.task,a=b.dataset.a;
+    if(a==='copy'){var r=rows().filter(function(x){return x.task_id===id})[0];try{navigator.clipboard.writeText(r.suggested_text)}catch(e){}toast(T('t_copied'));return}openSheet(id,a)}});
+}
+function openSheet(id,a){var lbl={accepted:T('accept'),done:T('finish'),dismissed:T('dismiss')}[a];
+  $('sheet').innerHTML='<h3>'+esc(T('confirmT'))+': '+esc(lbl)+'</h3><p>'+esc(T('fuNote'))+'</p><label for="nt">'+esc(T('note'))+'</label><textarea id="nt" maxlength="300"></textarea><div class="btns"><button id="sx">'+esc(T('cancel'))+'</button><button id="sok" class="'+(a==='dismissed'?'danger':'primary')+'">'+esc(T('confirm'))+'</button></div>';
+  $('scrim').classList.add('on');$('sheet').classList.add('on');$('sx').onclick=closeSheet;$('scrim').onclick=closeSheet;
+  $('sok').onclick=async function(){$('sok').disabled=true;try{await act(id,a,$('nt').value.trim());closeSheet();toast(T(a==='accepted'?'t_acc':a==='done'?'t_done':'t_dis')+(live?'':T('t_sim')));render()}catch(e){$('sok').disabled=false;toast(T('t_err')+': '+e.message)}}}
+function closeSheet(){$('scrim').classList.remove('on');$('sheet').classList.remove('on')}
+function agentStatus(a){if(a.responder_status==='error')return ['Error','bad'];if(!a.responder_kind)return ['No Responder','warn'];if(a.responder_status!=='ready')return ['Not Ready','warn'];return ['Runtime Ready','ok']}
+function renderAgents(){
+ var h='<h2>'+esc(T('agTitle'))+'</h2><p class="sub">'+esc(T('agHelp'))+'</p><div class="actions"><button id="agent-add" class="primary">+ Add Agent</button><button id="agent-refresh">Refresh</button></div><div class="agent-grid">';
+ h+=(D.agents||[]).map(function(a){var st=agentStatus(a);return '<article class="card" data-agent="'+esc(a.agent_id)+'"><div class="who">'+esc(a.business_name)+'</div><div class="meta">'+esc(a.agent_id)+'</div><div class="chips"><span class="chip '+(a.enabled?'acc':'')+'">'+(a.enabled?'Enabled':'Registered OFF')+'</span><span class="chip '+st[1]+'">'+st[0]+'</span></div><dl><dt>Responder</dt><dd>'+esc(a.responder_kind||'—')+' · '+esc(a.responder_status||'none')+'</dd><dt>'+esc(T('checked'))+'</dt><dd>'+esc(a.checked_at?dt(a.checked_at):T('never'))+'</dd></dl>'+(a.error_code?'<p class="err">'+esc(a.error_code)+'</p>':'')+'<div class="actions"><button data-agent-action="edit">Edit Agent</button><button data-agent-action="responder">Configure Responder</button><button data-agent-action="test">Test Agent</button><button data-agent-action="toggle" class="'+(a.enabled?'danger':'primary')+'" '+(!a.enabled&&(a.responder_status!=='ready'||!a.checked_at||Date.now()-Date.parse(a.checked_at)>900000)?'disabled title="Jalankan Test Agent dahulu"':'')+'>'+ (a.enabled?'Disable':'Enable')+'</button></div></article>'}).join('');
+ h+='</div><p class="sub">Enable agent tidak membuka LIVE WhatsApp. Add, edit dan konfigurasi menetapkan agent OFF; ujian sah diperlukan sebelum Enable.</p>'+renderControl();
+ $('p-agents').innerHTML=h;bindControl();$('agent-add').onclick=function(){agentEditor(null)};$('agent-refresh').onclick=function(){refreshAgents().catch(agentError)};
+ $('p-agents').querySelectorAll('[data-agent-action]').forEach(function(b){b.onclick=function(){var id=b.closest('[data-agent]').dataset.agent,a=(D.agents||[]).find(function(x){return x.agent_id===id});agentAction(a,b.dataset.agentAction).catch(agentError)}});
+}
+async function agentApi(action,body){if(!live)throw Error('Owner session diperlukan');var r=await fetch(live.url+'/functions/v1/ai-agent-management',{method:'POST',headers:{apikey:live.anon,Authorization:'Bearer '+tok,'Content-Type':'application/json'},body:JSON.stringify(Object.assign({action:action},body||{}))});var d=await r.json();if(!r.ok)throw Error(d.error||'Pengurusan agent gagal');return d}
+function agentError(e){toast(T('t_err')+': '+e.message)}
+async function refreshAgents(){D.agents=await rpc('ai_agent_readiness',{});renderAgents()}
+function agentSheet(h){$('sheet').innerHTML=h;$('sheet').classList.add('on');$('scrim').classList.add('on');$('scrim').onclick=closeSheet;$('sx').onclick=closeSheet;var f=$('sheet').querySelector('input,select,textarea,button');if(f)f.focus({preventScroll:true})}
+async function agentEditor(id){try{var d=await agentApi('list'),a=(d.agents||[]).find(function(x){return x.agent_id===id})||{};
+ var fields=[['agent_id','Agent ID',a.agent_id||''],['workspace_id','Workspace ID',a.workspace_id||''],['business_name','Nama projek',a.business_name||''],['agent_name','Nama agent',a.agent_name||''],['description','Keterangan',a.description||''],['keywords','Keyword (pisahkan dengan koma)',(a.keywords||[]).join(', ')],['aliases','Alias / model (koma)',(a.aliases||[]).join(', ')],['supported_intents','Supported intents (koma)',(a.supported_intents||[]).join(', ')],['routing_priority','Keutamaan routing (0–1000)',a.routing_priority==null?100:a.routing_priority],['knowledge_source','Knowledge source',a.knowledge_source||'']];
+ agentSheet('<h3>'+(id?'Edit Agent':'Add Agent')+'</h3><p>Disimpan sebagai OFF. Konfigurasi baharu perlu diuji semula.</p><form id="agent-form">'+fields.map(function(f){return '<label>'+esc(f[1])+'<input name="'+f[0]+'" value="'+esc(f[2])+'" '+(id&&f[0]==='agent_id'?'readonly':'')+' '+(['agent_id','workspace_id','business_name','agent_name'].includes(f[0])?'required':'')+' maxlength="'+(f[0]==='description'?500:4000)+'" '+(f[0]==='routing_priority'?'type="number" min="0" max="1000"':'')+'></label>'}).join('')+'<label>Bahasa<select name="default_language"><option value="ms">BM</option><option value="en">EN</option></select></label><div class="btns"><button type="button" id="sx">Batal</button><button class="primary" id="agent-save">Simpan OFF</button></div><p id="agent-error" role="alert"></p></form>');$('agent-form').elements.default_language.value=a.default_language||'ms';
+ $('agent-form').onsubmit=async function(e){e.preventDefault();$('agent-save').disabled=true;try{var c=Object.fromEntries(new FormData(e.target));['keywords','aliases','supported_intents'].forEach(function(k){c[k]=c[k].split(',').map(function(x){return x.trim()}).filter(Boolean)});c.routing_priority=Number(c.routing_priority);await agentApi('save',{agent_id:c.agent_id,config:c,create:!id});closeSheet();await refreshAgents();toast('Agent disimpan OFF')}catch(e){$('agent-error').textContent=e.message;$('agent-save').disabled=false}};
+ }catch(e){agentError(e)}}
+async function agentAction(a,action){
+ if(action==='edit')return agentEditor(a.agent_id);
+ if(action==='toggle'){confirmSheet(a.enabled?'Disable Agent':'Enable Agent','Perubahan direkod dalam audit. LIVE WhatsApp kekal mengikut kawalan global. Enable memerlukan ujian responder yang masih sah.','Sahkan',async function(){await agentApi('toggle',{agent_id:a.agent_id,enabled:!a.enabled,confirm:true});await refreshAgents()},a.enabled);return}
+ if(action==='responder'){var d=await agentApi('list');var options=(d.responders||[]).filter(function(r){return a.agent_id==='recond_ai'?r.responder.kind==='builtin'&&r.responder.id==='recond':a.agent_id==='proton_ai'?r.responder.kind==='builtin'&&r.responder.id==='proton':r.responder.kind==='edge_function'});agentSheet('<h3>Configure Responder</h3><p>Hanya responder yang dibenarkan untuk projek ini. Simpan menetapkan agent OFF. Projek baharu memerlukan Edge Function agent-* yang telah dipasang dan diluluskan.</p><label>Responder<select id="agent-responder">'+options.map(function(r,i){return '<option value="'+i+'">'+esc(r.label)+'</option>'}).join('')+'</select></label><div class="btns"><button id="sx">Batal</button><button id="agent-connect" class="primary">Sambung &amp; OFF</button></div><p id="agent-error" role="alert"></p>');$('agent-connect').disabled=!options.length;$('agent-connect').onclick=async function(){$('agent-connect').disabled=true;try{await agentApi('responder',{agent_id:a.agent_id,responder:options[Number($('agent-responder').value)].responder});closeSheet();await refreshAgents()}catch(e){$('agent-error').textContent=e.message;$('agent-connect').disabled=false}};return}
+ if(action==='test'){agentSheet('<h3>Test Agent</h3><p>Semak kesihatan responder dan jalankan router sedia ada dalam memori. Tiada WhatsApp dihantar.</p><label>Mesej ujian<input id="agent-message" maxlength="4000" placeholder="Contoh: Saya nak tahu pasal projek ini"></label><div class="btns"><button id="sx">Tutup</button><button id="agent-test" class="primary">Jalankan ujian</button></div><div id="agent-test-result" class="draft" role="status"></div>');$('agent-test').onclick=async function(){$('agent-test').disabled=true;try{var d=await agentApi('test',{agent_id:a.agent_id,message:$('agent-message').value});$('agent-test-result').textContent=JSON.stringify(d,null,2);await refreshAgents()}catch(e){$('agent-test-result').textContent=e.message}finally{$('agent-test').disabled=false}}}
+}
+function renderNight(){
+  var n=D.nightly||{runs:[]},h='<h2>'+esc(T('nightTitle'))+'</h2><p class="sub">'+esc(T('schedule'))+': '+esc(n.schedule||'02:00 Asia/Kuala_Lumpur')+'</p>';
+  h+=(n.runs||[]).map(function(r){return '<div class="card '+(r.status==='succeeded'?'good':'attn')+'"><div class="who">'+esc(r.run_date)+' <small>'+esc(r.trigger)+'</small></div><div class="meta"><span>'+esc(r.status)+'</span>'+(r.resumed_count?'<span>'+esc(T('resumed'))+' ×'+esc(r.resumed_count)+'</span>':'')+'</div>'+stagesHtml(r.stages)+'</div>'}).join('')||'<div class="empty">'+esc(T('nonight'))+'</div>';
+  $('p-night').innerHTML=h}
+function renderRoute(){
+  var c=(D.routing&&D.routing.counters)||{},K=[['active_conversations','active'],['needs_owner','needsOwner'],['human_takeover','human'],['opted_out','optout'],['unassigned','unassigned'],['routing_errors','errors']];
+  $('p-route').innerHTML='<h2>'+esc(T('rtTitle'))+'</h2><div class="grid">'+K.map(function(k){var v=c[k[0]]||0,warn=(k[0]==='needs_owner'||k[0]==='routing_errors')&&v>0;return '<div class="card '+(warn?'attn':'')+'"><div class="who" style="font-size:26px">'+esc(v)+'</div><div class="meta">'+esc(T(k[1]))+'</div></div>'}).join('')+'</div>'+(PROD?'':'<p><a href="../receptionist/dashboard/routing_center.html">'+esc(T('openRouting'))+' →</a></p>')}
+// ---------- v2: Leads / Inbox / AI control (owner only; every write is an audited owner RPC) ----------
+var takafulOnly=new URLSearchParams(location.search).get('workspace')==='ilindung';
+if(takafulOnly){var tnav=document.getElementById('takaful-tools');if(tnav)tnav.style.display='block';var cback=document.getElementById('cc-back');if(cback){cback.href='/takaful-keluarga?module=dashboard';cback.textContent='← Takaful Keluarga'}}
+var leadQ='',leadWs=takafulOnly?'ilindung':'all',inboxF='all',MOCKX=null,lastAct=Date.now(),crmRes=null;
+function modeCls(m){return m==='human'?'hum':m==='opted_out'?'bad':m==='awaiting_owner'?'warn':'acc'}
+function modeChip(m){return '<span class="chip '+modeCls(m)+'">'+esc(T('m_'+m))+'</span>'}
+async function loadLeads(){
+  if(!live){var q=leadQ.toLowerCase(),all=(MOCKX.leads.rows||[]).filter(function(r){return (leadWs==='all'||(r.interests||[]).some(function(i){return i.workspace_id===leadWs}))&&(!q||(r.name||'').toLowerCase().indexOf(q)>=0||(r.model_interest||'').toLowerCase().indexOf(q)>=0)});D.leads={total:all.length,rows:all};return}
+  D.leads=await rpc('ai_owner_leads',{p_workspace:leadWs==='all'?null:leadWs,p_search:leadQ||null,p_limit:100,p_offset:0});
+}
+async function loadInbox(){
+  if(!live){var all=(MOCKX.inbox.rows||[]).filter(function(r){return inboxF==='all'||(inboxF==='needs_owner'&&r.mode==='awaiting_owner')||r.mode===inboxF});D.inbox={rows:all,unmapped_conversations:MOCKX.inbox.unmapped_conversations};return}
+  D.inbox=await rpc('ai_owner_inbox',{p_filter:inboxF,p_limit:100});
+}
+async function ensureTab(){
+  try{ if(tab==='leads'&&!D.leads){await loadLeads()} if(tab==='inbox'&&!D.inbox){await loadInbox()} }catch(e){toast(T('t_err')+': '+e.message)}
+}
+function renderLeads(){
+  var rs=(D.leads&&D.leads.rows)||[];
+  var h='<h2>'+esc(T('leadsTitle'))+'</h2><p class="sub">'+esc(T('leadsNote'))+'</p><div class="srch"><input id="lq" type="search" inputmode="search" autocomplete="off" aria-label="'+esc(T('searchLead'))+'" placeholder="'+esc(T('searchLead'))+'" value="'+esc(leadQ)+'"><button class="sm primary" id="lqgo">'+esc(T('search'))+'</button></div>'
+   +'<div class="filters" role="group">'+['all','recond','proton','ilindung'].map(function(w){return '<button data-lws="'+w+'" aria-pressed="'+(leadWs===w)+'">'+esc(w==='all'?T('all'):w==='ilindung'?'Takaful Keluarga':w)+'</button>'}).join('')+'</div><p class="sub">'+esc((D.leads&&D.leads.total)||0)+' '+esc(T('leadsCount'))+'</p>';
+  if(!D.leads)h+='<div class="empty">'+esc(T('loading'))+'</div>';
+  else if(!rs.length)h+='<div class="empty">'+esc(T('emptyLeads'))+'</div>';
+  rs.forEach(function(r){
+    h+='<article class="card" data-lead="'+esc(r.lead_id)+'"><div class="chips">'+(r.interests||[]).map(function(i){return lvChip(i.level)+'<span class="chip">'+esc(i.workspace_id)+' · '+esc(i.label)+'</span>'}).join('')+'</div>'
+     +'<div class="who">'+esc(r.name||T('none'))+' <small>'+esc(r.phone_masked||'')+' · '+esc(r.lead_ref)+'</small></div>'
+     +'<div class="meta"><span>'+esc(r.source||'')+'</span><span>'+esc(r.status||'')+'</span><span>'+esc(r.model_interest||'')+'</span></div>'
+     +'<div class="chips">'+(r.route?modeChip(r.route.mode):'')+(r.open_tasks?'<span class="chip warn">'+esc(r.open_tasks)+' '+esc(T('openFu'))+'</span>':'')+(r.milestones||[]).map(function(m){return '<span class="chip '+(m.status==='confirmed'?'ok':'')+'">'+esc(T('k_'+m.kind))+': '+esc(T('ms_'+m.status))+'</span>'}).join('')+'</div>'
+     +'<div class="actions"><button class="primary sm" data-open="'+esc(r.lead_id)+'">'+esc(T('openLead'))+'</button></div></article>'});
+  $('p-leads').innerHTML=h;
+  var go=async function(){leadQ=$('lq').value.trim();try{await loadLeads()}catch(e){toast(T('t_err')+': '+e.message)}renderLeads()};
+  $('lqgo').onclick=go;$('lq').onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();go()}};
+  Array.prototype.forEach.call($('p-leads').querySelectorAll('[data-lws]'),function(b){b.onclick=async function(){leadWs=b.dataset.lws;leadQ=$('lq').value.trim();try{await loadLeads()}catch(e){toast(T('t_err')+': '+e.message)}renderLeads()}});
+  Array.prototype.forEach.call($('p-leads').querySelectorAll('[data-open]'),function(b){b.onclick=function(){openLead(b.dataset.open)}});
+}
+function evidenceFor(d,ws){
+  var sc=(d.scores||[]).filter(function(s){return s.workspace_id===ws})[0];
+  if(!sc)return '<div class="meta">'+esc(T('noEvidence'))+'</div>';
+  var rs=(sc.reasons||[]).slice(0,4).map(function(x){return '<li>'+esc(typeof x==='string'?x:(x.text||x.code||JSON.stringify(x)))+'</li>'}).join('');
+  var ev=(sc.evidence||[]);
+  return '<div class="meta"><span>'+esc(T('confidence'))+' '+esc(Math.round((sc.confidence||0)*100))+'%</span><span>'+esc(sc.ruleset||'')+'</span><span>'+esc(ev.length)+' '+esc(T('evidenceN'))+'</span></div>'+(rs?'<ul class="why">'+rs+'</ul>':'');
+}
+async function openLead(id){
+  var d;try{d=live?await rpc('ai_owner_lead_detail',{p_lead:id}):MOCKX.details[id]}catch(e){toast(T('t_err')+': '+e.message);return}
+  if(!d){toast(T('t_err'));return}
+  var L=d.lead,ws=(d.interests||[]).map(function(i){return i.workspace_id}).filter(function(v,i,a){return a.indexOf(v)===i});
+  var h='<h3>'+esc(L.name||L.lead_ref)+'</h3><p>'+esc(L.phone||'')+' · '+esc(L.source||'')+' · '+esc(L.status||'')+'</p><div class="meta"><span>'+esc(L.model_interest||'')+'</span><span>'+esc(L.area||'')+'</span><span>'+esc(L.budget||'')+'</span></div>'+(L.notes?'<div class="draft">'+esc(L.notes)+'</div>':'');
+  h+='<h4>'+esc(T('interestsT'))+'</h4>'+((d.interests||[]).map(function(i){
+    return '<div class="card"><div class="chips">'+lvChip(i.level)+'<span class="chip">'+esc(i.workspace_id)+'</span><span class="chip">'+esc(i.stage)+'</span></div><div class="who">'+esc(i.label)+' <small>×'+esc(i.mentions||1)+'</small></div>'+evidenceFor(d,i.workspace_id)
+     +'<div class="row"><select data-ovl="'+esc(i.workspace_id)+'" aria-label="'+esc(T('overrideT'))+'"><option value="HOT">HOT</option><option value="WARM">WARM</option><option value="COLD">COLD</option><option value="">'+esc(T('clearOverride'))+'</option></select><input data-ovr="'+esc(i.workspace_id)+'" maxlength="200" placeholder="'+esc(T('reasonReq'))+'"><button class="sm" data-ovs="'+esc(i.workspace_id)+'">'+esc(T('overrideSave'))+'</button></div></div>'}).join('')||'<div class="empty">'+esc(T('none'))+'</div>');
+  if(L.business_type==='ilindung'){
+    h+='<h4>Advisor Takaful Keluarga</h4><label>Status<select id="il-status"><option>new</option><option>followup</option><option>won</option><option>lost</option></select></label><label>Nota advisor<textarea id="il-note" maxlength="1000">'+esc(L.notes||'')+'</textarea></label><label>Tarikh follow-up (manual)<input id="il-date" type="date"></label><button id="il-save" class="primary">Simpan status & nota</button><p>Tiada follow-up dihantar. Won direkod secara manual oleh owner.</p>';
+  }else{
+  h+='<h4>'+esc(T('milestonesT'))+'</h4><div class="safe"><span>'+esc(T('msAiNever'))+'</span></div>';
+  var curWs=(openLead._ws&&ws.indexOf(openLead._ws)>=0)?openLead._ws:(ws[0]||'recond');
+  if(ws.length>1)h+='<label>'+esc(T('workspaceL'))+' <select id="mws">'+ws.map(function(w){return '<option'+(w===curWs?' selected':'')+'>'+esc(w)+'</option>'}).join('')+'</select></label>';
+  ['booking_rm500','loan','delivery'].forEach(function(k){
+    var m=(d.milestones||[]).filter(function(x){return x.kind===k&&x.workspace_id===curWs})[0];
+    h+='<div class="card"><div class="who">'+esc(T('k_'+k))+' <small>'+(m?esc(T('ms_'+m.status)):esc(T('ms_none')))+'</small></div>'+(m&&m.note?'<div class="meta">'+esc(m.note)+'</div>':'')
+     +'<div class="row"><select data-mss="'+k+'"><option value="pending">'+esc(T('ms_pending'))+'</option><option value="confirmed">'+esc(T('ms_confirmed'))+'</option><option value="cancelled">'+esc(T('ms_cancelled'))+'</option></select><input data-msn="'+k+'" maxlength="200" placeholder="'+esc(T('noteReq'))+'"><button class="sm primary" data-msb="'+k+'">'+esc(T('msSave'))+'</button></div></div>'});
+  }
+  h+='<h4>'+esc(T('auditT'))+'</h4>'+((d.audit||[]).slice(0,8).map(function(a){return '<div class="meta"><span>'+esc(dt(a.at))+'</span><span>'+esc(a.action)+'</span><span>'+esc(a.actor_type)+'</span>'+(a.reason?'<span>'+esc(a.reason)+'</span>':'')+'</div>'}).join('')||'<div class="empty">'+esc(T('none'))+'</div>');
+  h+='<div class="btns"><button id="sx">'+esc(T('close'))+'</button></div>';
+  $('sheet').innerHTML=h;$('scrim').classList.add('on');$('sheet').classList.add('on');$('sx').onclick=closeSheet;$('scrim').onclick=closeSheet;
+  if($('mws')){$('mws').onchange=function(){openLead._ws=$('mws').value;closeSheet();openLead(id)}}
+  if($('il-save')){$('il-status').value=L.status;$('il-date').value=L.next_follow_up_date||'';$('il-save').onclick=async function(){try{if(!live)throw Error('Owner session required');await rpc('ilindung_advisor_update',{p_lead:id,p_status:$('il-status').value,p_note:$('il-note').value,p_date:$('il-date').value||null});toast('Disimpan; tiada mesej dihantar');closeSheet();await loadLeads();renderLeads();}catch(e){toast(e.message)}};}
+  var after=async function(){closeSheet();if(live){try{await loadLeads()}catch(e){}}renderLeads();openLead(id)};
+  Array.prototype.forEach.call($('sheet').querySelectorAll('[data-ovs]'),function(b){b.onclick=async function(){var w=b.dataset.ovs,lv=$('sheet').querySelector('[data-ovl="'+w+'"]').value,rs=$('sheet').querySelector('[data-ovr="'+w+'"]').value.trim();
+    if(rs.length<3){toast(T('reasonReq'));return}
+    try{if(live)await rpc('ai_lead_interest_override_set',{p_lead:id,p_workspace:w,p_level:lv||null,p_reason:rs});else{(d.interests||[]).forEach(function(i){if(i.workspace_id===w)i.level=lv||'UNKNOWN'})}toast(T('t_saved')+(live?'':T('t_sim')));await after()}catch(e){toast(T('t_err')+': '+e.message)}}});
+  Array.prototype.forEach.call($('sheet').querySelectorAll('[data-msb]'),function(b){b.onclick=async function(){var k=b.dataset.msb,st=$('sheet').querySelector('[data-mss="'+k+'"]').value,nt=$('sheet').querySelector('[data-msn="'+k+'"]').value.trim(),w=($('mws')&&$('mws').value)||curWs;
+    if(nt.length<(st==='confirmed'?8:3)){toast(T('noteReq'));return}
+    try{if(live)await rpc('ai_deal_milestone_set',{p_lead:id,p_workspace:w,p_kind:k,p_status:st,p_note:nt,p_amount:(k==='booking_rm500'&&st==='confirmed')?500:null});
+      else{d.milestones=(d.milestones||[]).filter(function(x){return !(x.kind===k&&x.workspace_id===w)}).concat([{workspace_id:w,kind:k,status:st,note:nt}])}
+      toast(T('t_saved')+(live?'':T('t_sim')));await after()}catch(e){toast(T('t_err')+': '+e.message)}}});
+}
+function renderInbox(){
+  var rs=(D.inbox&&D.inbox.rows)||[];
+  if(takafulOnly)rs=rs.filter(function(r){return r.assigned_agent_id==='ilindung_ai'||r.workspace_id==='ilindung'||r.agent_name==='Takaful Keluarga AI'});
+  var h='<h2>'+esc(T('inboxTitle'))+'</h2><p class="sub">'+esc(T('inboxNote'))+'</p><div class="filters" role="group">'+['all','needs_owner','human','ai','opted_out'].map(function(f){return '<button data-if="'+f+'" aria-pressed="'+(inboxF===f)+'">'+esc(T('f_'+f))+'</button>'}).join('')+'</div>';
+  if(D.inbox&&D.inbox.unmapped_conversations)h+='<p class="sub">'+esc(T('unmappedN',D.inbox.unmapped_conversations))+'</p>';
+  if(!D.inbox)h+='<div class="empty">'+esc(T('loading'))+'</div>';else if(!rs.length)h+='<div class="empty">'+esc(T('emptyInbox'))+'</div>';
+  rs.forEach(function(r){var lm=r.last_message||{};
+    h+='<article class="card '+(r.mode==='human'?'hum':r.mode==='awaiting_owner'?'attn':'')+'" data-conv="'+esc(r.conversation_id)+'"><div class="chips">'+modeChip(r.mode)+(r.agent_name?'<span class="chip">'+esc(r.agent_name)+'</span>':'')+'</div>'
+     +'<div class="who">'+esc(r.lead_name||r.ref)+' <small>'+esc(r.ref)+'</small></div><div class="meta"><span>'+esc(lm.role==='user'?'👤':'🤖')+' '+esc(lm.snippet||'')+'</span></div><div class="meta"><span>'+esc(dt(r.last_inbound_at))+'</span></div>'
+     +'<div class="actions"><button class="primary sm" data-oc="'+esc(r.conversation_id)+'">'+esc(T('openConv'))+'</button></div></article>'});
+  $('p-inbox').innerHTML=h;
+  Array.prototype.forEach.call($('p-inbox').querySelectorAll('[data-if]'),function(b){b.onclick=async function(){inboxF=b.dataset.if;try{await loadInbox()}catch(e){toast(T('t_err')+': '+e.message)}renderInbox()}});
+  Array.prototype.forEach.call($('p-inbox').querySelectorAll('[data-oc]'),function(b){b.onclick=function(){openConv(b.dataset.oc)}});
+}
+async function openConv(id){
+  var d;try{d=live?await rpc('ai_routing_conversation',{p_conversation_id:id}):MOCKX.convs[id]}catch(e){toast(T('t_err')+': '+e.message);return}
+  if(!d||!d.route){toast(T('t_err'));return}
+  var mode=d.route.mode,h='<h3>'+esc(d.lead_name||T('none'))+'</h3><p>'+modeChip(mode)+'</p>';
+  h+='<div class="safe"><span>'+esc(T('inboxNote'))+'</span></div><h4>'+esc(T('msgsT'))+'</h4>'+((d.messages||[]).map(function(m){return '<div class="msg '+(m.role==='user'?'u':'a')+'"><small>'+esc(m.role)+' · '+esc(dt(m.created_at))+'</small><div>'+esc(m.content)+'</div></div>'}).join('')||'<div class="empty">'+esc(T('noMsgs'))+'</div>');
+  h+='<h4>'+esc(T('decisionsT'))+'</h4>'+((d.decisions||[]).slice(0,4).map(function(x){return '<div class="meta"><span>'+esc(x.kind)+'</span><span>'+esc(x.reason_code)+'</span><span>'+esc(dt(x.decided_at))+'</span></div>'}).join('')||'<div class="empty">'+esc(T('none'))+'</div>');
+  if(mode==='opted_out')h+='<div class="safe bad"><span>'+esc(T('optoutNote'))+'</span></div>';
+  else{
+    h+='<h4>'+esc(mode==='human'?T('release'):T('takeover'))+'</h4><p>'+esc(mode==='human'?T('releaseWarn'):T('takeoverWarn'))+'</p><label for="cr">'+esc(T('note'))+'</label><textarea id="cr" maxlength="300"></textarea>';
+    h+='<div class="btns"><button id="sx">'+esc(T('close'))+'</button><button class="primary" id="cact">'+esc(mode==='human'?T('release'):T('takeover'))+'</button></div>';
+  }
+  if(mode==='opted_out')h+='<div class="btns"><button id="sx">'+esc(T('close'))+'</button></div>';
+  $('sheet').innerHTML=h;$('scrim').classList.add('on');$('sheet').classList.add('on');$('sx').onclick=closeSheet;$('scrim').onclick=closeSheet;
+  if($('cact'))$('cact').onclick=async function(){$('cact').disabled=true;
+    try{if(live)await rpc(mode==='human'?'ai_route_release':'ai_route_takeover',{p_conversation_id:id,p_reason:$('cr').value.trim()||null});
+      else{var row=(MOCKX.inbox.rows||[]).filter(function(x){return x.conversation_id===id})[0];if(row)row.mode=mode==='human'?'ai':'human'}
+      closeSheet();toast(T(mode==='human'?'t_released':'t_took')+(live?'':T('t_sim')));if(live){D.inbox=null;await loadInbox()}else await loadInbox();renderInbox()}
+    catch(e){$('cact').disabled=false;toast(T('t_err')+': '+e.message)}}
+}
+function confirmSheet(title,body,okLabel,fn,danger){
+  $('sheet').innerHTML='<h3>'+esc(title)+'</h3><p>'+esc(body)+'</p><div class="btns"><button id="sx">'+esc(T('cancel'))+'</button><button id="sok" class="'+(danger?'danger':'primary')+'">'+esc(okLabel)+'</button></div>';
+  $('scrim').classList.add('on');$('sheet').classList.add('on');$('sx').onclick=closeSheet;$('scrim').onclick=closeSheet;
+  $('sok').onclick=async function(){$('sok').disabled=true;try{await fn();closeSheet()}catch(e){$('sok').disabled=false;toast(T('t_err')+': '+e.message)}};
+}
+function renderControl(){
+  var M=D.modules||{agents:[]},A4=D.agent4||null,U=D.usage||null,h='';
+  function mod(k){return (M.agents||[]).filter(function(a){return a.agent_key===k})[0]}
+  h+='<h2>'+esc(T('modulesT'))+'</h2><p class="sub">'+esc(T('modulesNote'))+'</p>';
+  [['agent_2_lead_manager','AI #2 Lead Manager'],['agent_3_followup_closer','AI #3 Follow-up Closer'],['agent_5_chief_of_staff','AI #5 Chief of Staff']].forEach(function(p){
+    var m=mod(p[0])||{enabled:false,mode:'shadow'};
+    h+='<div class="card" data-mod="'+p[0]+'"><div class="who">'+esc(p[1])+' <small>'+esc(m.mode)+'</small></div><div class="chips"><span class="chip '+(m.enabled?'ok':'')+'">'+esc(T(m.enabled?'modOn':'modOff'))+'</span></div><div class="actions"><button class="sm '+(m.enabled?'danger':'primary')+'" data-tg="'+p[0]+'" data-to="'+(m.enabled?'0':'1')+'">'+esc(T(m.enabled?'switchOff':'switchOn'))+'</button></div></div>'});
+  var r0=mod('agent_0_receptionist')||{enabled:false,mode:'shadow'};
+  h+='<div class="card"><div class="who">AI #0 Receptionist <small>'+esc(r0.mode)+'</small></div><div class="chips"><span class="chip">'+esc(T(r0.enabled?'modOn':'modOff'))+'</span><span class="chip warn">🔒 '+esc(T('liveLocked'))+'</span></div><div class="meta">'+esc(T('liveLockedNote'))+'</div></div>';
+  h+='<div class="card"><div class="who">AI #1 Sales Agent <small>WhatsApp</small></div><div class="meta">'+esc(T('ai1Note'))+'</div></div>';
+  if(A4){
+    h+='<div class="card '+(A4.enabled?'attn':'')+'" data-ai4="1"><div class="who">AI #4 Deal &amp; Booking <small>'+esc(A4.mode)+'</small></div><div class="chips"><span class="chip '+(A4.enabled?'warn':'ok')+'">'+esc(T(A4.enabled?'modOn':'modOff'))+'</span><span class="chip">'+esc(T('advisoryOnly'))+'</span><span class="chip '+(A4.gate_passed?'ok':'bad')+'">'+esc(T(A4.gate_passed?'gateOpen':'gateClosed'))+'</span></div><div class="meta">'+esc(T('ai4Note'))+'</div>'
+     +'<div class="actions"><button class="sm primary" data-tg="agent_4_deal_tracker" data-to="'+(A4.enabled?'0':'1')+'" '+(!A4.enabled?'disabled':'')+'>'+esc(T(A4.enabled?'switchOff':'switchOn'))+'</button></div></div>'}
+  h+='<h2>'+esc(T('crmT'))+'</h2><div class="card"><div class="meta">'+esc(T('crmNote'))+'</div><div class="actions"><button class="sm" id="crm-dry">'+esc(T('crmDry'))+'</button><button class="sm primary" id="crm-go">'+esc(T('crmApply'))+'</button></div>'
+   +(crmRes?'<div class="draft">'+esc(T('crmResult'))+': '+esc(JSON.stringify({applied:crmRes.applied,exact:crmRes.exact,ambiguous:crmRes.ambiguous,unmapped:crmRes.unmapped,routes_new:crmRes.routes_new,interests_new:crmRes.interests_new,sends:crmRes.sends}))+'</div>':'')+'</div>';
+  if(U){var tt=U.total||{};h+='<h2>'+esc(T('usageT'))+'</h2><div class="card"><div class="meta"><span>'+esc(tt.calls||0)+' '+esc(T('calls'))+'</span><span>'+esc(tt.tokens||0)+' tokens</span><span>$'+esc(tt.cost_usd||0)+'</span><span>'+esc(tt.errors||0)+' '+esc(T('errors').toLowerCase())+'</span></div></div>'}
+  return h;
+}
+function bindControl(){
+  Array.prototype.forEach.call($('p-agents').querySelectorAll('[data-tg]'),function(b){b.onclick=function(){var k=b.dataset.tg,on=b.dataset.to==='1';
+    confirmSheet(T(on?'switchOn':'switchOff'),T('toggleWarn'),T('confirm'),async function(){
+      if(live){await rpc('ai_set_agent_enabled',{p_agent_key:k,p_enabled:on});D.modules=await rpc('ai_modules_status',{});try{D.agent4=await rpc('ai_agent4_status',{})}catch(e){}}
+      else{var m=(D.modules.agents||[]).filter(function(a){return a.agent_key===k})[0];if(m)m.enabled=on}
+      toast(T('t_saved')+(live?'':T('t_sim')));renderAgents()},!on)}});
+  var run=function(apply){return async function(){try{crmRes=live?await rpc('ai_crm_sync_now',{p_apply:apply}):{applied:apply,exact:3,ambiguous:1,unmapped:1,routes_new:0,interests_new:0,sends:0};if(apply){D.leads=null;D.inbox=null}toast(T('t_saved')+(live?'':T('t_sim')));renderAgents()}catch(e){toast(T('t_err')+': '+e.message)}}};
+  if($('crm-dry'))$('crm-dry').onclick=run(false);if($('crm-go'))$('crm-go').onclick=run(true);
+}
+function render(){
+  document.documentElement.lang=lang;$('h1').textContent=T('h1');$('gt').textContent=T('gt');$('gl-src').textContent=T('src');$('gl-pw').textContent=T('pw');$('go').textContent=T('go');
+  $('src').options[0].textContent=T('mock');$('src').options[1].textContent=T('live');
+  $('srcchip').textContent=live?(PROD?(CFG.mode==='staging'?'STAGING':T('prodchip')):T('livechip')):(PROD&&$('src').value==='live'?(lang==='ms'?'Akses owner':'Owner access'):T('sample'));$('srcchip').className='chip '+(live?'ok':'warn');
+  Array.prototype.forEach.call(document.querySelectorAll('.liveonly'),function(e){e.classList.toggle('hidden',$('src').value!=='live'||(PROD&&!!e.querySelector('#url,#anon')))});
+  $('l-ms').setAttribute('aria-pressed',lang==='ms');$('l-en').setAttribute('aria-pressed',lang==='en');
+  if(!D){return}
+  $('asof').textContent=(D.brief&&D.brief.brief_date?D.brief.brief_date+' · ':'')+'Asia/Kuala_Lumpur';
+  renderSafe();renderTabs();renderToday();renderFu();renderAgents();renderNight();renderRoute();if(tab==='leads'&&D.leads)renderLeads();if(tab==='inbox'&&D.inbox)renderInbox();
+}
+$('l-ms').onclick=function(){lang='ms';render()};$('l-en').onclick=function(){lang='en';render()};$('src').onchange=render;
+$('go').onclick=async function(){
+  $('gerr').classList.add('hidden');$('go').disabled=true;
+  try{
+    if($('src').value==='mock'){live=null;tok=null}
+    else{var url=PROD?CFG.base:$('url').value.trim().replace(/\/$/,''),anon=PROD?CFG.anon:$('anon').value.trim();
+      var r=await fetch(url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{'apikey':anon,'Content-Type':'application/json'},body:JSON.stringify({email:$('em').value.trim(),password:$('pw').value})});
+      var j=await r.json();if(!r.ok||!j.access_token)throw new Error(j.error_description||j.msg||'login failed');tok=j.access_token;live={url:url,anon:anon};$('pw').value='';lastAct=Date.now()}
+    await loadAll();$('gate').classList.add('hidden');$('app').classList.remove('hidden');tab='today';show();
+  }catch(e){D=null;live=null;tok=null;$('gerr').textContent=e.message==='OWNER_ONLY'?(lang==='ms'?'Akaun ini bukan owner. Halaman ini untuk owner sahaja (OWNER_ONLY).':'This account is not the owner. Owner only (OWNER_ONLY).'):(lang==='ms'?'Tidak dapat memuatkan: ':'Could not load: ')+e.message;$('gerr').classList.remove('hidden')}
+  $('go').disabled=false;
+};
+function lockdown(msg){tok=null;live=null;D=null;closeSheet();if(PROD){$('app').classList.remove('hidden');$('gate').classList.add('hidden');$('cc-data').classList.add('hidden');$('cc-progress').classList.remove('hidden');$('cc-progress').innerHTML='<p>'+esc(msg||'Sesi tamat.')+'</p><p><a href="/">Kembali ke dashboard</a></p>';}else{$('app').classList.add('hidden');$('gate').classList.remove('hidden');if(msg){$('gerr').textContent=msg;$('gerr').classList.remove('hidden')}}render()}
+if(PROD){
+  $('src').value='live';Array.prototype.forEach.call(document.querySelectorAll('#gate label'),function(l){if(l.querySelector('#src,#url,#anon'))l.classList.add('hidden')});
+  Array.prototype.forEach.call(document.querySelectorAll('.liveonly'),function(l){if(l.querySelector('#url,#anon'))l.classList.add('hidden')});
+  ['click','keydown','touchstart'].forEach(function(ev){document.addEventListener(ev,function(){lastAct=Date.now()},true)});
+  setInterval(function(){if(tok&&Date.now()-lastAct>20*60*1000)lockdown(T('idle'))},30000);
+}
+render();
+// AI_CC_SHARED_SESSION_V1 (same-tab, no second password)
+(function(){
+if(!PROD)return;
+var KEY="rc4.sess", info=document.getElementById("cc-sso-message"),expiry=0,busy=false;
+$("gt").textContent="Satu login untuk Kerja Sendiri";$("go").disabled=true;
+function note(s){info.textContent=s;}
+function readToken(){try{var d=JSON.parse(sessionStorage.getItem(KEY)||"null");return d&&typeof d.r==="string"&&d.r.length?d.r:null}catch(_){return null}}
+async function renew(t){
+var r=await fetch("/api/supabase/auth/v1/token?grant_type=refresh_token",{method:"POST",cache:"no-store",credentials:"omit",headers:{"apikey":CFG.anon,"Content-Type":"application/json"},body:JSON.stringify({refresh_token:t}),signal:AbortSignal.timeout(12000)});
+var j=await r.json().catch(function(){return {}});if(!r.ok||!j.access_token||!j.refresh_token)throw Error(r.status===400||r.status===401?"EXPIRED":"REFRESH_FAILED");
+sessionStorage.setItem(KEY,JSON.stringify({r:j.refresh_token}));if(window.ksSessionSync)window.ksSessionSync.rotated(j.refresh_token);return j;
+}
+function progressInfo(message,canRetry){
+var el=$('cc-progress');el.classList.remove('hidden');el.textContent=message;
+if(canRetry){var btn=document.createElement('button');btn.type='button';btn.className='sm';btn.textContent='Cuba lagi';btn.addEventListener('click',function(){if(tok&&live){void loadData()}else{void start()}});el.appendChild(document.createTextNode(' '));el.appendChild(btn)}
+}
+async function loadData(){
+ $('cc-data').classList.add('hidden');progressInfo('Memuatkan data jualan…',false);
+ try{await loadAll();tab=takafulOnly?(new URLSearchParams(location.search).get('tab')||'leads'):'today';if(!['today','leads','inbox','fu','agents','night','route'].includes(tab))tab='leads';lastAct=Date.now();$('cc-data').classList.remove('hidden');$('cc-progress').classList.add('hidden');await show();}
+ catch(e){D=null;$('cc-data').classList.add('hidden');progressInfo('Data belum dapat dimuatkan ('+String(e.message||'network').slice(0,90)+').',true)}
+}
+async function start(){
+ $('gate').classList.add('hidden');$('app').classList.remove('hidden');$('cc-data').classList.add('hidden');progressInfo('Membuka dashboard…',false);
+ var t=readToken();if(!t){progressInfo('Sila buka halaman ini daripada dashboard Kerja Sendiri selepas log masuk.',false);return}
+ try{
+ var j=await renew(t);tok=j.access_token;live={url:CFG.base,anon:CFG.anon};expiry=(Number(j.expires_at||0)*1000)||(Date.now()+Number(j.expires_in||3600)*1000);
+ var ok=await rpc('ai_is_owner',{});if(ok!==true)throw Error('OWNER_ONLY');
+ await loadData();
+ }catch(e){tok=null;live=null;D=null;$('cc-data').classList.add('hidden');
+ if(e.message==='EXPIRED'){try{sessionStorage.removeItem(KEY)}catch(_){}progressInfo('Sesi tamat. Sila masuk melalui dashboard Kerja Sendiri.',false)}
+ else if(e.message==='OWNER_ONLY')progressInfo('Akses ini hanya untuk owner Kerja Sendiri.',false);
+ else progressInfo('Sambungan sesi terganggu. Cuba lagi.',true);
+ }
+}
+setInterval(async function(){if(!tok||!live||busy||Date.now()<expiry-180000||Date.now()-lastAct>1200000)return;
+busy=true;try{var prior=tok;var j=await renew(readToken());if(tok===prior){tok=j.access_token;expiry=(Number(j.expires_at||0)*1000)||(Date.now()+Number(j.expires_in||3600)*1000)}}
+catch(e){lockdown("Sesi tamat. Kembali ke dashboard.");}finally{busy=false;}
+},60000);void start();
+if(window.ksSessionSync)window.ksSessionSync.on(function(m){if(m.t==="logout")lockdown("Anda telah log keluar dari dashboard. Log masuk semula di dashboard.")});
+window.addEventListener("pageshow",function(e){if(e.persisted&&tok&&!readToken())lockdown("Sesi tamat. Kembali ke dashboard.")});
+})();
+</script>
+</body>
+</html>

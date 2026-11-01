@@ -1,0 +1,16 @@
+{
+  "production_version_unchanged": "3e6d5fad-0a07-4394-8fec-7c23076c91f9",
+  "production_sha256_unchanged": "c3b594b1f8b85c1444ff5b8f36c523b01e8034ec8d23fa056ff691d0a8ff336e",
+  "worker_export_hash_verified": true,
+  "generated_worker_equals_export": true,
+  "ui_literals_verified": 23,
+  "public_file_count": 39,
+  "referenced_local_assets_missing": [],
+  "index_to_masuk_output_matches_live": true,
+  "recovered_rc4_output_matches_live": true,
+  "public_headers_match_live_config": true,
+  "secret_scan_findings": 0,
+  "syntax_check": "node --check worker/worker.generated.mjs PASS",
+  "production_mutations": false,
+  "caveats": "See README completeness section and asset-export.json; five shadowed raw assets recovered from repo, not directly verified."
+}

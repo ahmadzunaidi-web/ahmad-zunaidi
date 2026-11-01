@@ -1,0 +1,363 @@
+[
+  {
+    "constant": "LINDUNG_SEO_HTML",
+    "source_name": "LINDUNG_SEO_HTML",
+    "file": "worker/ui/LINDUNG_SEO_HTML.html",
+    "encoding": "text",
+    "sha256": "e038567163daaf4cffc15955b178c42ac5d5cf600ffe2c93a1e0267057725c56",
+    "bytes": 15061,
+    "definition_line": 1,
+    "reference_lines": [
+      1,
+      100
+    ],
+    "literal_start": 23,
+    "literal_end": 15435,
+    "complete_document": true
+  },
+  {
+    "constant": "KS_SESSION_SYNC_V1",
+    "source_name": "KS_SESSION_SYNC_V1",
+    "file": "worker/ui/KS_SESSION_SYNC_V1.js",
+    "encoding": "text",
+    "sha256": "e1192358574675382f743ce32ae6b601fb0f4c4d2f35ddeaa0b90a90125b91df",
+    "bytes": 3458,
+    "definition_line": 3,
+    "reference_lines": [
+      3,
+      29
+    ],
+    "literal_start": 15490,
+    "literal_end": 19011,
+    "complete_document": true
+  },
+  {
+    "constant": "UNIFIED_DASHBOARD_THEME_V1",
+    "source_name": "UNIFIED_DASHBOARD_THEME_V1",
+    "file": "worker/ui/UNIFIED_DASHBOARD_THEME_V1.css",
+    "encoding": "text",
+    "sha256": "09daf40187a5779b724ae12558500b7315105dfdb49001769ccdc099e9840b9b",
+    "bytes": 6869,
+    "definition_line": 4,
+    "reference_lines": [
+      4,
+      30
+    ],
+    "literal_start": 19046,
+    "literal_end": 26042,
+    "complete_document": true
+  },
+  {
+    "constant": "SEO_INTELLIGENCE_GZ_B64",
+    "source_name": "SEO_INTELLIGENCE_GZ_B64",
+    "file": "worker/ui/SEO_INTELLIGENCE_GZ_B64.js",
+    "encoding": "gzip-base64",
+    "sha256": "7af2969a5247d61379687f70bc1278dba2e5535ac2c40254af547a6f2e38ff04",
+    "bytes": 56228,
+    "definition_line": 5,
+    "reference_lines": [
+      5,
+      31
+    ],
+    "literal_start": 26074,
+    "literal_end": 50836,
+    "complete_document": true
+  },
+  {
+    "constant": "AI_SALES_V1_HTML",
+    "source_name": "AI_SALES_V1_HTML",
+    "file": "worker/ui/AI_SALES_V1_HTML.html",
+    "encoding": "text",
+    "sha256": "8e3388f2a34af88437e9e7c607dcac0d9beb07dbc4e4d60dae9d4fa45d3bfa45",
+    "bytes": 86723,
+    "definition_line": 7,
+    "reference_lines": [
+      7,
+      104
+    ],
+    "literal_start": 50910,
+    "literal_end": 140534,
+    "complete_document": true
+  },
+  {
+    "constant": "INFRA_CHAT_V12_B64",
+    "source_name": "INFRA_CHAT_V12_B64",
+    "file": "worker/ui/INFRA_CHAT_V12_B64.js",
+    "encoding": "gzip-base64",
+    "sha256": "0de3be16a4364f735007ff684e1f4d7b57f4f45d8d1a523e3a1eb4be9efd1076",
+    "bytes": 113516,
+    "definition_line": 8,
+    "reference_lines": [
+      8,
+      32
+    ],
+    "literal_start": 140563,
+    "literal_end": 185001,
+    "complete_document": true
+  },
+  {
+    "constant": "INFRA_NAV_V113",
+    "source_name": "INFRA_NAV_V113",
+    "file": "worker/ui/INFRA_NAV_V113.js",
+    "encoding": "gzip-base64",
+    "sha256": "d17481768c30172112697997ced6ba68e6614387cd88801ebbf95a78ce377916",
+    "bytes": 13496,
+    "definition_line": 9,
+    "reference_lines": [
+      9,
+      33
+    ],
+    "literal_start": 185026,
+    "literal_end": 191720,
+    "complete_document": true
+  },
+  {
+    "constant": "INFRA_PICKER_PATCH_JS",
+    "source_name": "INFRA_PICKER_PATCH_JS",
+    "file": "worker/ui/INFRA_PICKER_PATCH_JS.js",
+    "encoding": "text",
+    "sha256": "613437cdb6862aadac9b1e22fd9060db1abde46e41bfc95433036a9e4fe856f3",
+    "bytes": 2157,
+    "definition_line": 10,
+    "reference_lines": [
+      10,
+      34
+    ],
+    "literal_start": 191752,
+    "literal_end": 193963,
+    "complete_document": true
+  },
+  {
+    "constant": "INFRA_JS_GZ",
+    "source_name": "INFRA_JS_GZ",
+    "file": "worker/ui/INFRA_JS_GZ.js",
+    "encoding": "base64",
+    "sha256": "c6fd4d930cade9d57549d311e4ee52a8d53d686a691c720192022ffd704429b4",
+    "bytes": 13222,
+    "definition_line": 11,
+    "reference_lines": [
+      11,
+      35
+    ],
+    "literal_start": 193985,
+    "literal_end": 211619,
+    "complete_document": true
+  },
+  {
+    "constant": "INFRA_CSS_GZ",
+    "source_name": "INFRA_CSS_GZ",
+    "file": "worker/ui/INFRA_CSS_GZ.css",
+    "encoding": "base64",
+    "sha256": "5f5d8878e51fe8fc5a785c683f64bab4de3b2e74dc36b2003825473659b1c2d6",
+    "bytes": 3590,
+    "definition_line": 12,
+    "reference_lines": [
+      12,
+      36
+    ],
+    "literal_start": 211642,
+    "literal_end": 216432,
+    "complete_document": true
+  },
+  {
+    "constant": "KS_PERSONA_HTML",
+    "source_name": "KS_PERSONA_HTML",
+    "file": "worker/ui/KS_PERSONA_HTML.html",
+    "encoding": "text",
+    "sha256": "96fd4d01184c34e26f633c3ca087568efa90c2ae4f19b24020e6efe4c517a734",
+    "bytes": 7419,
+    "definition_line": 21,
+    "reference_lines": [
+      21,
+      103
+    ],
+    "literal_start": 217635,
+    "literal_end": 225161,
+    "complete_document": true
+  },
+  {
+    "constant": "KS_TAKAFUL_HTML",
+    "source_name": "KS_TAKAFUL_HTML",
+    "file": "worker/ui/KS_TAKAFUL_HTML.html",
+    "encoding": "text",
+    "sha256": "20719b5ed00e1519f815a3b8106b358fdb544bc374cf691c3e2c919c895e861a",
+    "bytes": 25466,
+    "definition_line": 22,
+    "reference_lines": [
+      22,
+      101
+    ],
+    "literal_start": 225187,
+    "literal_end": 251124,
+    "complete_document": true
+  },
+  {
+    "constant": "KS_TAKAFUL_NAV_CSS",
+    "source_name": "KS_TAKAFUL_NAV_CSS",
+    "file": "worker/ui/KS_TAKAFUL_NAV_CSS.css",
+    "encoding": "text",
+    "sha256": "0baf63abfc994d2b0a7d22c65e00a256d9c61eddf80d9d8a40f2d4db22408416",
+    "bytes": 1500,
+    "definition_line": 23,
+    "reference_lines": [
+      23,
+      57
+    ],
+    "literal_start": 251151,
+    "literal_end": 252655,
+    "complete_document": true
+  },
+  {
+    "constant": "FRAGMENT_01_topCard",
+    "source_name": "topCard",
+    "file": "worker/ui/FRAGMENT_01_topCard.html",
+    "encoding": "text",
+    "sha256": "5e75416b552e5becab0c33ee0330332bccc6deaf32d6dfc73ba773aae5c801b9",
+    "bytes": 677,
+    "definition_line": 43,
+    "reference_lines": [
+      43
+    ],
+    "literal_start": 255630,
+    "literal_end": 256321,
+    "complete_document": false
+  },
+  {
+    "constant": "FRAGMENT_02_extra",
+    "source_name": "extra",
+    "file": "worker/ui/FRAGMENT_02_extra.html",
+    "encoding": "text",
+    "sha256": "25d1e94b11f1c06b4d4c7adb925f261ba64d84974cf9bf7265cc13442809631a",
+    "bytes": 1688,
+    "definition_line": 46,
+    "reference_lines": [
+      46
+    ],
+    "literal_start": 256849,
+    "literal_end": 258597,
+    "complete_document": false
+  },
+  {
+    "constant": "FRAGMENT_03_fragment",
+    "source_name": "fragment",
+    "file": "worker/ui/FRAGMENT_03_fragment.html",
+    "encoding": "text",
+    "sha256": "2fa53c66207d6d11a3bb8f967fe0b486d48b71a8a76f202b9f2a5ce24d18055b",
+    "bytes": 745,
+    "definition_line": 125,
+    "reference_lines": [
+      125
+    ],
+    "literal_start": 274378,
+    "literal_end": 275125,
+    "complete_document": false
+  },
+  {
+    "constant": "FRAGMENT_04_fragment",
+    "source_name": "fragment",
+    "file": "worker/ui/FRAGMENT_04_fragment.html",
+    "encoding": "text",
+    "sha256": "803a4a2ae92349932b384681c7423efc3abf056d8c27adbdf7bdc763ddd802b9",
+    "bytes": 691,
+    "definition_line": 128,
+    "reference_lines": [
+      128
+    ],
+    "literal_start": 275781,
+    "literal_end": 276474,
+    "complete_document": false
+  },
+  {
+    "constant": "FRAGMENT_05_fragment",
+    "source_name": "fragment",
+    "file": "worker/ui/FRAGMENT_05_fragment.html",
+    "encoding": "text",
+    "sha256": "e8811a1d432cb150f34f51307deaa4037fd37af2e7d240feded6846ad1b6d75c",
+    "bytes": 403,
+    "definition_line": 134,
+    "reference_lines": [
+      134
+    ],
+    "literal_start": 278750,
+    "literal_end": 279155,
+    "complete_document": false
+  },
+  {
+    "constant": "FRAGMENT_06_fragment",
+    "source_name": "fragment",
+    "file": "worker/ui/FRAGMENT_06_fragment.html",
+    "encoding": "text",
+    "sha256": "f9bd43958c60f829219f26c084acd3191a5daf3f480985063ac4d8d69f94d2a8",
+    "bytes": 1377,
+    "definition_line": 138,
+    "reference_lines": [
+      138
+    ],
+    "literal_start": 281055,
+    "literal_end": 282488,
+    "complete_document": false
+  },
+  {
+    "constant": "V6_CSS",
+    "source_name": "V6_CSS",
+    "file": "worker/ui/V6_CSS.css",
+    "encoding": "text",
+    "sha256": "ec988c3613dfd38b6d6c0bf5a15938218d851a672347b51fcdbad1dfd42883cc",
+    "bytes": 14353,
+    "definition_line": 144,
+    "reference_lines": [
+      144,
+      173
+    ],
+    "literal_start": 282832,
+    "literal_end": 297286,
+    "complete_document": true
+  },
+  {
+    "constant": "V6_JS",
+    "source_name": "V6_JS",
+    "file": "worker/ui/V6_JS.js",
+    "encoding": "text",
+    "sha256": "849112e494c372942707bace14a188ec5f63d65a0e548d1e626947930d77775c",
+    "bytes": 12052,
+    "definition_line": 145,
+    "reference_lines": [
+      145,
+      173
+    ],
+    "literal_start": 297300,
+    "literal_end": 309449,
+    "complete_document": true
+  },
+  {
+    "constant": "FRAGMENT_07_fixed",
+    "source_name": "fixed",
+    "file": "worker/ui/FRAGMENT_07_fixed.js",
+    "encoding": "text",
+    "sha256": "f01af1750fb28f45cdc242674e5d3d03076f021d17853c7367b712a84244004d",
+    "bytes": 603,
+    "definition_line": 156,
+    "reference_lines": [
+      156
+    ],
+    "literal_start": 310215,
+    "literal_end": 310822,
+    "complete_document": false
+  },
+  {
+    "constant": "PUBLIC_DAWN_HTML",
+    "source_name": "PUBLIC_DAWN_HTML",
+    "file": "worker/ui/PUBLIC_DAWN_HTML.html",
+    "encoding": "text",
+    "sha256": "6f0963c1ac23012cdf898d3de3988f70951626e71646e3397e07209a3a3c7860",
+    "bytes": 7899,
+    "definition_line": 191,
+    "reference_lines": [
+      191,
+      201
+    ],
+    "literal_start": 313812,
+    "literal_end": 322140,
+    "complete_document": true
+  }
+]

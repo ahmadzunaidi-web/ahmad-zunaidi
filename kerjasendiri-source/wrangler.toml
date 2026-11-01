@@ -1,0 +1,68 @@
+# Reconstructed effective production configuration, not an original downloaded TOML.
+# Live routing/bindings/assets were read through Cloudflare's GET APIs.
+name = "kerjasendiri"
+account_id = "25c0caf58655cbc31d6c08a535100342"
+main = "worker/worker.generated.mjs"
+compatibility_date = "2026-10-23"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+preview_urls = false
+logpush = false
+routes = [
+  { pattern = "kerjasendiri.my/*", zone_name = "kerjasendiri.my" },
+  { pattern = "www.kerjasendiri.my/*", zone_name = "kerjasendiri.my" }
+]
+
+[build]
+command = "node build-worker.mjs"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+html_handling = "none"
+not_found_handling = "single-page-application"
+run_worker_first = true
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+redact_query_string = true
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = false
+persist = true
+head_sampling_rate = 1
+
+# Explicit empty route lists keep the production domains out of staging/preview.
+# These env blocks are suggested deployment targets, not a source snapshot of those Workers.
+[env.staging]
+name = "kerjasendiri-staging"
+workers_dev = true
+preview_urls = false
+routes = []
+
+[env.staging.assets]
+directory = "./public"
+binding = "ASSETS"
+html_handling = "none"
+not_found_handling = "single-page-application"
+run_worker_first = true
+
+[env.preview]
+name = "kerjasendiri-v6-preview"
+workers_dev = true
+preview_urls = false
+routes = []
+
+[env.preview.assets]
+directory = "./public"
+binding = "ASSETS"
+html_handling = "none"
+not_found_handling = "single-page-application"
+run_worker_first = true
